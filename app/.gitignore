@@ -1,0 +1,8 @@
+# системное
+.DS_Store
+.claude/
+
+# личные исходники (не публикуем)
+*.gwlevel.json
+/level1.mp3
+/tgt.jpg

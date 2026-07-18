@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geometry Jump — скачать для macOS</title>
+<meta name="description" content="Geometry Jump — игра с редактором уровней для macOS. Скачать бесплатно.">
+<meta property="og:title" content="Geometry Jump">
+<meta property="og:description" content="Игра с редактором уровней для macOS">
+<meta property="og:type" content="website">
+<link rel="icon" href="icon.png">
+<style>
+  :root {
+    --bg: #0a1e64;
+    --bg2: #061643;
+    --ink: #ffffff;
+    --dim: rgba(255, 255, 255, .62);
+    --green: #57c94a;
+    --green-dark: #2f8a25;
+    --line: rgba(255, 255, 255, .14);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    background: linear-gradient(170deg, var(--bg) 0%, var(--bg2) 100%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* сетка на фоне — как в лобби игры */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 90px 90px;
+    mask-image: radial-gradient(ellipse at 50% 40%, #000 20%, transparent 78%);
+    pointer-events: none;
+  }
+
+  main {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    text-align: center;
+  }
+
+  .icon {
+    width: 132px;
+    height: 132px;
+    border-radius: 29%;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
+    image-rendering: -webkit-optimize-contrast;
+  }
+
+  h1 {
+    margin: 26px 0 10px;
+    font-size: clamp(38px, 9vw, 62px);
+    font-weight: 900;
+    letter-spacing: -.02em;
+    line-height: 1.05;
+    text-shadow: 0 4px 0 rgba(0, 0, 0, .35);
+  }
+
+  .tagline {
+    margin: 0 0 38px;
+    font-size: clamp(16px, 3.6vw, 19px);
+    color: var(--dim);
+  }
+
+  .download {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 19px 42px;
+    border-radius: 16px;
+    background: var(--green);
+    border-bottom: 5px solid var(--green-dark);
+    color: #fff;
+    font-size: 21px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: transform .12s ease, filter .12s ease;
+  }
+
+  .download:hover { filter: brightness(1.08); }
+  .download:active { transform: translateY(3px); border-bottom-width: 2px; }
+
+  .download svg { flex: none; }
+
+  .meta {
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--dim);
+  }
+
+  .meta b { color: rgba(255, 255, 255, .85); font-weight: 600; }
+
+  .req {
+    margin-top: 6px;
+    font-size: 13.5px;
+    color: rgba(255, 255, 255, .48);
+  }
+
+  footer {
+    margin-top: 52px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+  }
+
+  footer a { color: var(--dim); text-decoration: none; }
+  footer a:hover { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .download { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <img class="icon" src="icon.png" alt="Иконка Geometry Jump" width="132" height="132">
+
+  <h1>Geometry Jump</h1>
+  <p class="tagline">Игра с редактором уровней для macOS</p>
+
+  <a class="download" href="https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-arm64.dmg">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 18.5V20a1 1 0 001 1h14a1 1 0 001-1v-1.5"
+            stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Скачать для macOS
+  </a>
+
+  <p class="meta">Версия <b>1.2.0</b> · 128 МБ · бесплатно</p>
+  <p class="req">Mac с чипом Apple — M1 и новее</p>
+
+  <footer>
+    <a href="https://github.com/easygamestudios/geometry-jump">Исходный код на GitHub</a>
+  </footer>
+</main>
+</body>
+</html>
