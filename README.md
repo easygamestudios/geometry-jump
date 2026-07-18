@@ -4,6 +4,24 @@
 что и раньше, но завёрнутая в Electron, поэтому запускается как обычная программа,
 а не как сайт в браузере.
 
+**Скачать:** https://easygamestudios.github.io/geometry-jump/
+
+Страница загрузки лежит в `docs/` и публикуется через GitHub Pages. Сам `.dmg`
+в репозиторий не коммитится — он весит больше 100 МБ, а это потолок GitHub для
+файлов в репозитории. Поэтому он уходит в [Releases](https://github.com/easygamestudios/geometry-jump/releases)
+(там лимит 2 ГБ), а кнопка на сайте ссылается на `releases/latest/download/…` —
+такая ссылка сама переключится на новую версию, если имя файла не менять.
+
+## Выпустить новую версию
+
+```
+npm run build
+gh release create vX.Y.Z "dist/Geometry Jump-X.Y.Z-arm64.dmg#Geometry-Jump-arm64.dmg"
+```
+
+Имя файла в релизе должно остаться `Geometry-Jump-arm64.dmg`, иначе кнопка
+на сайте перестанет находить файл. Версию на странице поправь в `docs/index.html`.
+
 ## Запустить
 
 ```
