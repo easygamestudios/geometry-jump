@@ -209,6 +209,63 @@
       ctx.strokeStyle = 'rgba(255,255,255,.22)';
       ctx.lineWidth = 2;
       ctx.strokeRect(-h + 16, -h + 16, B - 32, B - 32);
+    } else if (style === 5) {
+      // кирпич: три ряда со смещёнными швами
+      ctx.strokeStyle = 'rgba(255,255,255,.22)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 1; i < 3; i++) {
+        const y = -h + (B / 3) * i;
+        ctx.moveTo(-h + 4, y); ctx.lineTo(h - 4, y);
+      }
+      ctx.moveTo(0, -h + 4); ctx.lineTo(0, -h + B / 3);
+      ctx.moveTo(-h / 2, -h + B / 3); ctx.lineTo(-h / 2, -h + B * 2 / 3);
+      ctx.moveTo(h / 2, -h + B / 3); ctx.lineTo(h / 2, -h + B * 2 / 3);
+      ctx.moveTo(0, -h + B * 2 / 3); ctx.lineTo(0, h - 4);
+      ctx.stroke();
+    } else if (style === 6) {
+      // косая штриховка
+      ctx.save();
+      ctx.beginPath(); ctx.rect(-h + 4, -h + 4, B - 8, B - 8); ctx.clip();
+      ctx.strokeStyle = 'rgba(255,255,255,.2)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let x = -B; x < B; x += 11) { ctx.moveTo(x, -h); ctx.lineTo(x + B, h); }
+      ctx.stroke();
+      ctx.restore();
+    } else if (style === 7) {
+      // решётка
+      ctx.strokeStyle = 'rgba(255,255,255,.18)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 1; i < 3; i++) {
+        const d = -h + (B / 3) * i;
+        ctx.moveTo(d, -h + 4); ctx.lineTo(d, h - 4);
+        ctx.moveTo(-h + 4, d); ctx.lineTo(h - 4, d);
+      }
+      ctx.stroke();
+    } else if (style === 8) {
+      // кольцо по центру
+      ctx.strokeStyle = 'rgba(255,255,255,.3)';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.arc(0, 0, h * 0.5, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.14)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, h * 0.72, 0, Math.PI * 2); ctx.stroke();
+    } else if (style === 9) {
+      // ромб по центру
+      ctx.strokeStyle = 'rgba(255,255,255,.3)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, -h + 10); ctx.lineTo(h - 10, 0); ctx.lineTo(0, h - 10); ctx.lineTo(-h + 10, 0);
+      ctx.closePath(); ctx.stroke();
+    } else if (style === 10) {
+      // горизонтальная пластина
+      ctx.fillStyle = 'rgba(255,255,255,.16)';
+      ctx.fillRect(-h + 5, -7, B - 10, 14);
+      ctx.strokeStyle = 'rgba(255,255,255,.32)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-h + 5, -7, B - 10, 14);
     }
   }
 
@@ -222,13 +279,31 @@
     ctx.save();
 
     if (ghost) {
-      // уже собранная — только призрачный контур
-      ctx.globalAlpha = 0.32;
+      // уже собранная: та же чеканка, но потухшая — сразу видно, что это
+      // именно эта монета, а не какой-то другой значок
+      ctx.globalAlpha = 0.5;
+      const rimG = ctx.createLinearGradient(0, -r, 0, r);
+      rimG.addColorStop(0, '#7d7d7d');
+      rimG.addColorStop(0.5, '#4a4a4a');
+      rimG.addColorStop(1, '#242424');
       ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,217,77,.12)'; ctx.fill();
-      ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(255,217,77,.6)'; ctx.stroke();
-      ctx.beginPath(); ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
-      ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(255,217,77,.45)'; ctx.stroke();
+      ctx.fillStyle = rimG; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = '#141414'; ctx.stroke();
+
+      const faceG = ctx.createRadialGradient(-r * 0.3, -r * 0.34, r * 0.08, 0, 0, r * 0.88);
+      faceG.addColorStop(0, '#6e6e6e');
+      faceG.addColorStop(0.5, '#454545');
+      faceG.addColorStop(1, '#2a2a2a');
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.76, 0, Math.PI * 2);
+      ctx.fillStyle = faceG; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.stroke();
+
+      const dg = r * 0.42;
+      ctx.beginPath();
+      ctx.moveTo(0, -dg); ctx.lineTo(dg * 0.7, 0); ctx.lineTo(0, dg); ctx.lineTo(-dg * 0.7, 0);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,255,255,.28)';
+      ctx.fill();
       ctx.restore();
       return;
     }
@@ -588,8 +663,13 @@
         ctx.font = '900 20px "Arial Black", Arial';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.lineWidth = 3;
-        ctx.strokeText('M', 0, 1);
-        ctx.fillText('M', 0, 1);
+        ctx.strokeText('M', 0, -3);
+        ctx.fillText('M', 0, -3);
+        ctx.font = '900 12px Arial';
+        ctx.lineWidth = 2.5;
+        const cap = 'гр.' + (obj.target || 1);
+        ctx.strokeText(cap, 0, B * 0.28);
+        ctx.fillText(cap, 0, B * 0.28);
       }
     } else if (t === 'alpha') {
       // альфа-триггер: виден только в редакторе. Внутри — доля непрозрачности,
@@ -606,8 +686,15 @@
         ctx.font = '900 20px "Arial Black", Arial';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.lineWidth = 3;
-        ctx.strokeText('α', 0, 1);
-        ctx.fillText('α', 0, 1);
+        ctx.strokeText('α', 0, -3);
+        ctx.fillText('α', 0, -3);
+        // группа и целевая прозрачность прямо на значке: иначе, поставив
+        // несколько триггеров, не понять, какой из них что делает
+        ctx.font = '900 12px Arial';
+        ctx.lineWidth = 2.5;
+        const cap = 'гр.' + (obj.target || 1) + ' → ' + Math.round((obj.opacity != null ? obj.opacity : 0) * 100) + '%';
+        ctx.strokeText(cap, 0, B * 0.28);
+        ctx.fillText(cap, 0, B * 0.28);
       }
     } else if (t === 'start') {
       // старт-позиция: видна только в редакторе, тест начинается с неё
@@ -651,6 +738,8 @@
   const TYPES = ['block', 'spike', 'coin', 'portal', 'trigger', 'orb', 'pad', 'speed', 'move', 'alpha', 'start', 'slope'];
   // типы, которым можно ставить произвольный угол: их коллизия поворот не читает
   const FREE_ROT = ['block', 'spike'];
+  const BLOCK_STYLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // 5+ — декоративные
+  const MAX_COINS = 3;   // столько же, сколько секретных монет в уровне Geometry Dash
   const DIFFICULTIES = ['easy', 'normal', 'hard', 'harder', 'insane', 'demon'];
   function normalizeLevel(raw) {
     const lvl = {
@@ -661,8 +750,15 @@
       difficulty: DIFFICULTIES.includes(raw.difficulty) ? raw.difficulty : 'normal',
       objects: []
     };
+    let coins = 0;
     (raw.objects || []).forEach(o => {
       if (!o || typeof o.x !== 'number' || !TYPES.includes(o.t)) return;
+      // монет в уровне не больше трёх: лишние отбрасываем ещё при загрузке,
+      // иначе счётчик собранных в меню разъедется с тем, что есть в уровне
+      if (o.t === 'coin') {
+        if (coins >= MAX_COINS) return;
+        coins++;
+      }
       // координаты с шагом 0.05 — поддержка свободного размещения в редакторе
       const obj = { t: o.t, x: Math.round(o.x * 20) / 20, y: Math.round((o.y || 0) * 20) / 20 };
       // У блоков и шипов поворот чисто внешний: их хитбоксы осевые и угол не читают,
@@ -675,7 +771,7 @@
       }
       if (o.size && o.size !== 1) obj.size = Math.max(0.4, Math.min(3, +o.size));
       if (o.group) obj.group = Math.max(0, Math.min(99, Math.round(+o.group))) || 0;
-      if (o.t === 'block') obj.style = [1, 2, 3, 4].includes(o.style) ? o.style : 1;
+      if (o.t === 'block') obj.style = BLOCK_STYLES.includes(o.style) ? o.style : 1;
       if (o.t === 'portal') obj.mode = ['ship', 'wave'].includes(o.mode) ? o.mode : 'cube';
       // dash — только у орбов: батут-рывок не предусмотрен
       if (o.t === 'orb') obj.kind = ORB_KINDS.includes(o.kind) ? o.kind : 'yellow';
@@ -2089,6 +2185,7 @@
   /* ---------- экспорт ---------- */
   window.GW = {
     FREE_ROT,
+    MAX_COINS,
     B, VIEW_W, VIEW_H, GROUND_SCREEN_Y, PHYS, SPEED_COLORS,
     Game, Icons, Sfx,
     renderObject, normalizeLevel,

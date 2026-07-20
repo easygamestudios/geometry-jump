@@ -52,7 +52,13 @@
       { id: 'block2', label: 'Блок X',    make: (x, y) => ({ t: 'block', x, y, style: 2 }) },
       { id: 'block3', label: 'Блок клетка', make: (x, y) => ({ t: 'block', x, y, style: 3 }) },
       { id: 'block4', label: 'Блок панель', make: (x, y) => ({ t: 'block', x, y, style: 4 }) },
-      { id: 'slope',  label: 'Горка',     make: (x, y) => ({ t: 'slope', x, y }) }
+      { id: 'slope',  label: 'Горка',     make: (x, y) => ({ t: 'slope', x, y }) },
+      { id: 'block5', label: 'Кирпич',    make: (x, y) => ({ t: 'block', x, y, style: 5 }) },
+      { id: 'block6', label: 'Штриховка', make: (x, y) => ({ t: 'block', x, y, style: 6 }) },
+      { id: 'block7', label: 'Решётка',   make: (x, y) => ({ t: 'block', x, y, style: 7 }) },
+      { id: 'block8', label: 'Кольцо',    make: (x, y) => ({ t: 'block', x, y, style: 8 }) },
+      { id: 'block9', label: 'Ромб',      make: (x, y) => ({ t: 'block', x, y, style: 9 }) },
+      { id: 'block10', label: 'Пластина', make: (x, y) => ({ t: 'block', x, y, style: 10 }) }
     ]},
     { name: 'Объекты', items: [
       { id: 'spike',   label: 'Шип',          make: (x, y) => ({ t: 'spike', x, y }) },
@@ -149,9 +155,20 @@
     return null;
   }
 
+  const MAX_COINS = (window.GW && window.GW.MAX_COINS) || 3;
+
   function placeAt(px, py) {
     const def = findTool(state.tool);
     if (!def) return;
+    // монет не больше трёх: движок всё равно отбросит лишние при загрузке,
+    // и без предупреждения они бы просто исчезали из уровня
+    if (state.tool === 'coin') {
+      const есть = state.level.objects.filter(o => o.t === 'coin').length;
+      if (есть >= MAX_COINS) {
+        window.GW_APP.toast('В уровне не больше ' + MAX_COINS + ' монет', 2200);
+        return;
+      }
+    }
     let x, y;
     if (state.freeMove) {
       x = Math.max(0, snap05(px2fx(px) - 0.5));
