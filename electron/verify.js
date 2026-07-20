@@ -57,13 +57,55 @@ app.whenReady().then(async () => {
   await new Promise((r) => setTimeout(r, 2500));
 
   if (MODE === 'editor' || MODE === 'export') {
-    await win.webContents.executeJavaScript(`document.querySelector('#btn-editor').click()`);
+    // кнопка редактора в лобби больше не отдельная: сначала общая btn-tools,
+    // потом пункт «Редактор» в окне выбора
+    const открыт = await win.webContents.executeJavaScript(`(() => {
+      const btn = document.getElementById('btn-tools');
+      if (!btn) return 'нет btn-tools';
+      btn.click();
+      const ed = document.getElementById('tools-editor');
+      if (!ed) return 'нет пункта «Редактор» в выборе';
+      ed.click();
+      return 'ok';
+    })()`);
+    if (открыт !== 'ok') problems.push('не удалось открыть редактор: ' + открыт);
     await new Promise((r) => setTimeout(r, 2000));
   }
 
   if (MODE === 'export') {
     await win.webContents.executeJavaScript(`document.querySelector('#ed-export').click()`);
     await new Promise((r) => setTimeout(r, 2500));
+  }
+
+  // объединённая кнопка лобби: одна иконка вместо двух, по клику — выбор
+  if (MODE === 'lobby') {
+    const tools = await win.webContents.executeJavaScript(`(() => {
+      const было_map = !!document.getElementById('btn-map');
+      const btn = document.getElementById('btn-tools');
+      if (!btn) return { есть_кнопка: false };
+      btn.click();
+      const ov = document.getElementById('overlay-tools');
+      const открылось = !!(ov && ov.classList.contains('active'));
+      // уходим на карту и проверяем, что экран сменился
+      document.getElementById('tools-map').click();
+      return {
+        есть_кнопка: true,
+        старая_кнопка_карты_осталась: было_map,
+        выбор_открылся: открылось,
+        есть_редактор: !!document.getElementById('tools-editor'),
+        есть_карта: !!document.getElementById('tools-map')
+      };
+    })()`);
+    await new Promise((r) => setTimeout(r, 900));
+    const экран = await win.webContents.executeJavaScript(
+      `(document.querySelector('.screen.active') || {}).id`);
+    console.log('=== TOOLS ===');
+    console.log(JSON.stringify({ ...tools, экран_после_выбора: экран }, null, 2));
+    if (!tools.есть_кнопка) problems.push('нет объединённой кнопки btn-tools');
+    if (tools.старая_кнопка_карты_осталась) problems.push('старая кнопка карты не убрана из лобби');
+    if (!tools.выбор_открылся) problems.push('окно выбора не открылось');
+    if (!tools.есть_редактор || !tools.есть_карта) problems.push('в выборе нет пункта редактора или карты');
+    if (экран !== 'screen-map') problems.push('выбор «Карта» не привёл на карту, экран: ' + экран);
   }
 
   // новые кнопки инспектора: если промахнуться с id, editor.js падает на
@@ -102,6 +144,7 @@ app.whenReady().then(async () => {
     const level = {
       name: 'orbs', bg: '#101a2e', difficulty: 'easy',
       objects: [
+        { t: 'coin', x: 5, y: 3 }, { t: 'coin', x: 6, y: 3 }, { t: 'coin', x: 7, y: 3 },
         { t: 'orb', x: 9, y: 4, kind: 'yellow' },
         { t: 'orb', x: 13, y: 4, kind: 'pink' },
         { t: 'orb', x: 17, y: 4, kind: 'blue' },
@@ -129,6 +172,7 @@ app.whenReady().then(async () => {
     console.log(st);
     if (!JSON.parse(st).жив) problems.push('игрок умер в витрине орбов — кадр будет пустым');
     if (JSON.parse(st).орбов !== 4) problems.push('в витрине не все четыре вида орбов');
+    // монета в кадре — чтобы разглядеть новую чеканку
   }
 
   // dash-орб: при зажатой кнопке игрок должен лететь ровно по линии орба,
@@ -242,6 +286,43 @@ app.whenReady().then(async () => {
     else if (wave.вершин < 2) problems.push('след волны не появился');
     // палка короче своей толщины (~11 px) снова выглядела бы точками
     else if (wave.средняя_длина_палки < 20) problems.push(`палки слишком короткие: ${wave.средняя_длина_палки} px — след опять выйдет точками`);
+  }
+
+  // альфа-триггер: группа должна плавно раствориться, но остаться твёрдой —
+  // как в GD, прозрачность только внешняя
+  let alpha = null;
+  if (MODE === 'alpha') {
+    await win.webContents.executeJavaScript(`(() => {
+      window.GW_APP.playLevel({ name: 'alpha', bg: '#101a2e', objects: [
+        { t: 'block', x: 12, y: 0, style: 1, group: 5 },
+        { t: 'block', x: 12, y: 1, style: 1, group: 5 },
+        { t: 'alpha', x: 4, y: 3, target: 5, opacity: 0, dur: 1 }
+      ] });
+      return 'ok';
+    })()`);
+    await new Promise((r) => setTimeout(r, 900));
+
+    const read = `(() => {
+      const g = window.GW_APP.game;
+      const a = g.groupAlpha[5];
+      return { прозрачность: a == null ? null : +a.toFixed(2), анимаций: g.alphaAnims.length, мертв: !!g.p.dead };
+    })()`;
+    const до = await win.webContents.executeJavaScript(read);
+    await new Promise((r) => setTimeout(r, 700));
+    const в_процессе = await win.webContents.executeJavaScript(read);
+    await new Promise((r) => setTimeout(r, 900));
+    const после = await win.webContents.executeJavaScript(read);
+    // блок стал невидимым — но игрок обязан об него разбиться
+    await new Promise((r) => setTimeout(r, 900));
+    const врезался = await win.webContents.executeJavaScript(`(() => {
+      const g = window.GW_APP.game;
+      return { мертв_или_перезапуск: !!g.p.dead || g.attempts > 1, попыток: g.attempts };
+    })()`);
+
+    alpha = { до, в_процессе, после, врезался };
+    if (после.прозрачность !== 0) problems.push('группа не растворилась: прозрачность ' + после.прозрачность);
+    if (в_процессе.прозрачность === null) problems.push('альфа-триггер не сработал');
+    if (!врезался.мертв_или_перезапуск) problems.push('невидимый блок перестал быть твёрдым — прозрачность не должна влиять на физику');
   }
 
   // батут: обычный на полу обязан подбрасывать (я менял условие попадания),
@@ -373,6 +454,11 @@ app.whenReady().then(async () => {
   if (run) {
     console.log('=== PLAY ===');
     console.log(JSON.stringify(run, null, 2));
+  }
+
+  if (alpha) {
+    console.log('=== ALPHA ===');
+    console.log(JSON.stringify(alpha, null, 2));
   }
 
   if (wave) {

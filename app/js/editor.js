@@ -78,6 +78,7 @@
     { name: 'Триггеры', items: [
       { id: 'trigger', label: 'Цвет фона',    make: (x, y) => ({ t: 'trigger', x, y, color: '#7a1fd0', dur: 1 }) },
       { id: 'move',    label: 'Move-триггер', make: (x, y) => ({ t: 'move', x, y, target: 1, dx: 0, dy: 2, dur: 1 }) },
+      { id: 'alpha',   label: 'Прозрачность', make: (x, y) => ({ t: 'alpha', x, y, target: 1, opacity: 0, dur: 1 }) },
       { id: 'start',   label: 'Старт-поза',   make: (x, y) => ({ t: 'start', x, y }) }
     ]}
   ];
@@ -602,7 +603,8 @@
   const TYPE_NAMES = {
     block: 'Блок', spike: 'Шип', coin: 'Монета', portal: 'Портал',
     trigger: 'Триггер цвета', move: 'Move-триггер', orb: 'Орб', pad: 'Батут',
-    speed: 'Ускорение', start: 'Старт-поза', slope: 'Горка'
+    speed: 'Ускорение', start: 'Старт-поза', slope: 'Горка',
+    alpha: 'Триггер прозрачности'
   };
 
   function updateInspector() {
@@ -649,6 +651,14 @@
       $('#insp-dx').value = single.dx;
       $('#insp-dy').value = single.dy;
       $('#insp-mdur').value = single.dur;
+    }
+
+    const isAlpha = single && single.t === 'alpha';
+    $('#insp-alpha-rows').style.display = isAlpha ? 'block' : 'none';
+    if (isAlpha) {
+      $('#insp-atarget').value = single.target;
+      $('#insp-aopacity').value = single.opacity;
+      $('#insp-adur').value = single.dur;
     }
     updateStackBtns();
   }
@@ -780,6 +790,19 @@
     if (o && o.t === 'move') { o.dur = Math.max(0, Math.min(10, +e.target.value || 0)); markDirty(); }
   });
 
+  $('#insp-atarget').addEventListener('change', (e) => {
+    const o = [...selection][0];
+    if (o && o.t === 'alpha') { o.target = Math.max(1, Math.min(99, Math.round(+e.target.value) || 1)); markDirty(); }
+  });
+  $('#insp-aopacity').addEventListener('change', (e) => {
+    const o = [...selection][0];
+    if (o && o.t === 'alpha') { o.opacity = Math.max(0, Math.min(1, +e.target.value || 0)); markDirty(); }
+  });
+  $('#insp-adur').addEventListener('change', (e) => {
+    const o = [...selection][0];
+    if (o && o.t === 'alpha') { o.dur = Math.max(0, Math.min(10, +e.target.value || 0)); markDirty(); }
+  });
+
   /* ---------- левая стопка ---------- */
   $('#ed-undo').addEventListener('click', doUndo);
   $('#ed-redo').addEventListener('click', doRedo);
@@ -880,7 +903,7 @@
 
   $('#ed-save').addEventListener('click', () => {
     autosave();
-    window.GW_APP.toast('Сохранено в браузере ✓');
+    window.GW_APP.toast('Уровень сохранён ✓');
   });
 
   $('#ed-export').addEventListener('click', () => {
@@ -981,6 +1004,6 @@
 
   loadAutosave();
 
-  const btn = $('#btn-editor');
-  if (btn) btn.addEventListener('click', openEditor);
+  // кнопку в лобби теперь держит main.js: она общая для редактора и карты
+  // и открывает выбор, а сюда попадает через GW_EDITOR.open()
 })();

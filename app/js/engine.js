@@ -213,50 +213,88 @@
   }
 
   function drawCoin(ctx, opts) {
-    // центрированная монета r ~ 0.42B
+    // Чеканная монета: гурт, утопленная лицевая площадка, тиснёный ромб и блик.
+    // Свечение — полупрозрачными кольцами, а не shadowBlur: тот заметно дороже.
     const r = B * 0.42;
     const ghost = opts && opts.ghost;
+    const still = opts && opts.static;
+    const tm = (opts && opts.time) || 0;
     ctx.save();
-    ctx.globalAlpha = ghost ? 0.35 : 1;
-    if (!ghost && !(opts && opts.static)) { ctx.shadowColor = '#ffd94d'; ctx.shadowBlur = 16; }
-    // тело
-    const g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r);
-    g.addColorStop(0, '#fff3ac');
-    g.addColorStop(0.45, '#ffd23d');
-    g.addColorStop(1, '#e89c00');
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = ghost ? 'rgba(255,217,77,.15)' : g;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = ghost ? 'rgba(255,217,77,.6)' : '#a06c00';
-    ctx.stroke();
-    // внутреннее кольцо с фаской
-    ctx.beginPath(); ctx.arc(0, 0, r * 0.66, 0, Math.PI * 2);
-    ctx.lineWidth = 3.5;
-    ctx.strokeStyle = ghost ? 'rgba(255,217,77,.5)' : 'rgba(160,108,0,.9)';
-    ctx.stroke();
-    if (!ghost) {
-      ctx.beginPath(); ctx.arc(0, 0, r * 0.58, 0, Math.PI * 2);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(255,244,180,.8)';
-      ctx.stroke();
-      // блик
-      ctx.beginPath();
-      ctx.arc(0, 0, r * 0.82, -2.4, -1.1);
-      ctx.lineWidth = 4.5;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = 'rgba(255,255,255,.75)';
-      ctx.stroke();
-      // маленькая звёздочка
-      ctx.fillStyle = 'rgba(255,255,255,.9)';
-      const sx = r * 0.38, sy = r * 0.30;
-      ctx.beginPath();
-      ctx.moveTo(sx, sy - 6); ctx.lineTo(sx + 1.8, sy - 1.8); ctx.lineTo(sx + 6, sy);
-      ctx.lineTo(sx + 1.8, sy + 1.8); ctx.lineTo(sx, sy + 6); ctx.lineTo(sx - 1.8, sy + 1.8);
-      ctx.lineTo(sx - 6, sy); ctx.lineTo(sx - 1.8, sy - 1.8);
-      ctx.closePath(); ctx.fill();
+
+    if (ghost) {
+      // уже собранная — только призрачный контур
+      ctx.globalAlpha = 0.32;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,217,77,.12)'; ctx.fill();
+      ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(255,217,77,.6)'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
+      ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(255,217,77,.45)'; ctx.stroke();
+      ctx.restore();
+      return;
     }
+
+    if (!still) {
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffd94d';
+      ctx.globalAlpha = 0.16; ctx.lineWidth = 15; ctx.stroke();
+      ctx.globalAlpha = 0.28; ctx.lineWidth = 8; ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // гурт: сверху светлый, снизу тёмный — даёт объём
+    const rim = ctx.createLinearGradient(0, -r, 0, r);
+    rim.addColorStop(0, '#ffeda4');
+    rim.addColorStop(0.5, '#e2a718');
+    rim.addColorStop(1, '#9a6300');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = rim; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = '#6a4300'; ctx.stroke();
+
+    // лицевая площадка, свет падает слева сверху
+    const face = ctx.createRadialGradient(-r * 0.3, -r * 0.34, r * 0.08, 0, 0, r * 0.88);
+    face.addColorStop(0, '#fff9d4');
+    face.addColorStop(0.5, '#ffd23d');
+    face.addColorStop(1, '#d38c00');
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.76, 0, Math.PI * 2);
+    ctx.fillStyle = face; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(110,70,0,.6)'; ctx.stroke();
+
+    // тиснёный ромб: сначала тень со смещением, потом сам ромб
+    const d = r * 0.42;
+    const diamond = (ox, oy) => {
+      ctx.beginPath();
+      ctx.moveTo(ox, oy - d);
+      ctx.lineTo(ox + d * 0.7, oy);
+      ctx.lineTo(ox, oy + d);
+      ctx.lineTo(ox - d * 0.7, oy);
+      ctx.closePath();
+    };
+    diamond(1.6, 1.6);
+    ctx.fillStyle = 'rgba(105,66,0,.45)';
+    ctx.fill();
+    diamond(0, 0);
+    ctx.fillStyle = '#fff4bb';
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = 'rgba(110,70,0,.55)';
+    ctx.stroke();
+
+    // блик, бегущий по монете
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.76, 0, Math.PI * 2);
+    ctx.clip();
+    const bx = still ? -r * 0.3 : (((tm * 0.9) % 1) * 2 - 1) * r * 1.4;
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(bx - r * 0.16, -r);
+    ctx.lineTo(bx + r * 0.16, -r);
+    ctx.lineTo(bx + r * 0.42, r);
+    ctx.lineTo(bx + r * 0.1, r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
     ctx.restore();
   }
 
@@ -553,6 +591,24 @@
         ctx.strokeText('M', 0, 1);
         ctx.fillText('M', 0, 1);
       }
+    } else if (t === 'alpha') {
+      // альфа-триггер: виден только в редакторе. Внутри — доля непрозрачности,
+      // к которой он приведёт свою группу
+      if (opts.editor) {
+        ctx.beginPath(); ctx.arc(0, 0, B * 0.36, 0, Math.PI * 2);
+        ctx.fillStyle = '#7ac6ff';
+        ctx.fill();
+        ctx.lineWidth = 3; ctx.strokeStyle = '#fff';
+        ctx.setLineDash([6, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000';
+        ctx.font = '900 20px "Arial Black", Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3;
+        ctx.strokeText('α', 0, 1);
+        ctx.fillText('α', 0, 1);
+      }
     } else if (t === 'start') {
       // старт-позиция: видна только в редакторе, тест начинается с неё
       if (opts.editor) {
@@ -592,7 +648,7 @@
   }
 
   /* ---------- нормализация уровня ---------- */
-  const TYPES = ['block', 'spike', 'coin', 'portal', 'trigger', 'orb', 'pad', 'speed', 'move', 'start', 'slope'];
+  const TYPES = ['block', 'spike', 'coin', 'portal', 'trigger', 'orb', 'pad', 'speed', 'move', 'alpha', 'start', 'slope'];
   // типы, которым можно ставить произвольный угол: их коллизия поворот не читает
   const FREE_ROT = ['block', 'spike'];
   const DIFFICULTIES = ['easy', 'normal', 'hard', 'harder', 'insane', 'demon'];
@@ -627,6 +683,11 @@
       if (o.t === 'speed') obj.mult = [0.8, 1, 1.5, 2].includes(+o.mult) ? +o.mult : 1;
       if (o.t === 'trigger') {
         obj.color = o.color || '#ff00ff';
+        obj.dur = isFinite(+o.dur) ? Math.max(0, Math.min(10, +o.dur)) : 1;
+      }
+      if (o.t === 'alpha') {
+        obj.target = Math.max(1, Math.min(99, Math.round(+o.target) || 1));
+        obj.opacity = Math.max(0, Math.min(1, o.opacity != null ? +o.opacity : 0));
         obj.dur = isFinite(+o.dur) ? Math.max(0, Math.min(10, +o.dur)) : 1;
       }
       if (o.t === 'move') {
@@ -775,11 +836,13 @@
     const startX = this.p.x;
     this.groupOff = {};
     this.moveAnims = [];
+    this.groupAlpha = {};   // gid -> текущая прозрачность группы (1 — непрозрачно)
+    this.alphaAnims = [];
     this.speedMult = cp ? cp.speedMult : 1;
     let lastSpeedX = -Infinity;
     this.level.objects.forEach(o => {
       if (o.t === 'portal') o.used = o.x * B + B < startX;
-      if (o.t === 'trigger' || o.t === 'move') o.used = o.x * B <= startX;
+      if (o.t === 'trigger' || o.t === 'move' || o.t === 'alpha') o.used = o.x * B <= startX;
       if (o.t === 'speed') {
         o.used = o.x * B + B < startX;
         if (o.used && !cp && o.x * B > lastSpeedX) { lastSpeedX = o.x * B; this.speedMult = o.mult; }
@@ -794,6 +857,9 @@
         off.x += o.dx * B;
         off.y += o.dy * B;
       }
+      // при старте с чекпоинта пройденные альфа-триггеры уже должны быть применены,
+      // иначе объекты, которые обязаны быть невидимы, снова окажутся на виду
+      if (o.t === 'alpha' && o.used) this.groupAlpha[o.target] = o.opacity;
     });
 
     // режим игрока при старте не с начала — по последнему пройденному порталу
@@ -939,6 +1005,15 @@
       off.x = a.sx + a.dx * k;
       off.y = a.sy + a.dy * k;
       if (k >= 1) this.moveAnims.splice(i, 1);
+    }
+
+    // альфа-анимации групп: плавное проявление и растворение объектов
+    for (let i = this.alphaAnims.length - 1; i >= 0; i--) {
+      const a = this.alphaAnims[i];
+      a.t += dt;
+      const k = a.dur > 0 ? Math.min(1, a.t / a.dur) : 1;
+      this.groupAlpha[a.gid] = a.from + (a.to - a.from) * k;
+      if (k >= 1) this.alphaAnims.splice(i, 1);
     }
 
     // частицы
@@ -1325,6 +1400,16 @@
         }
       }
 
+      if (o.t === 'alpha' && !o.used) {
+        if (p.x + B / 2 >= baseX) {
+          o.used = true;
+          const gid = o.target;
+          const from = this.groupAlpha[gid] != null ? this.groupAlpha[gid] : 1;
+          this.alphaAnims.push({ gid, from, to: o.opacity, t: 0, dur: o.dur });
+          if (o.dur <= 0) this.groupAlpha[gid] = o.opacity;
+        }
+      }
+
       if (o.t === 'move' && !o.used) {
         if (p.x + B / 2 >= baseX) {
           o.used = true;
@@ -1547,12 +1632,17 @@
     // частиц в секунду, а не за кадр — иначе на 120 Гц их вдвое больше, чем на 60
     const perSec = (n) => Math.min(0.9, n * (this._frameDt || 1 / 60));
     const drawObj = (o) => {
-      if (o.t === 'trigger' || o.t === 'move' || o.t === 'start') return;
+      if (o.t === 'trigger' || o.t === 'move' || o.t === 'alpha' || o.t === 'start') return;
       const off = this.getOff(o);
       const ox = o.x * B + off.x;
       if (ox < viewL || ox > viewR) return;
+      // прозрачность группы от альфа-триггера. Как в GD, она только внешняя:
+      // объект остаётся твёрдым, даже став невидимым
+      const ga = o.group ? this.groupAlpha[o.group] : undefined;
+      if (ga === 0) return;
       const ghost = o.t === 'coin' && (o.taken || !!this.savedCoins[o.coinIndex]);
       ctx.save();
+      if (ga != null && ga < 1) ctx.globalAlpha = ga;
       ctx.translate(this.sx(ox), this.sy(o.y * B + off.y));
       renderObject(ctx, o, { time: this.time, ghost });
       ctx.restore();

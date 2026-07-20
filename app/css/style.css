@@ -609,6 +609,7 @@ canvas { display: block; }
 .gd-btn.orange { background: linear-gradient(180deg, #ffc95e, #e08414); }
 .gd-btn.gray   { background: linear-gradient(180deg, #9aa2ad, #59616c); }
 
+#tools-hint { font-size: 15px; color: #9fd0ff; margin-top: 18px; -webkit-text-stroke: 1px #000; }
 #pause-practice-hint { font-size: 14px; color: #9fd0ff; margin-top: 18px; -webkit-text-stroke: 1px #000; line-height: 1.6; }
 
 /* ряды круглых кнопок-иконок (пауза, победа, попапы) */

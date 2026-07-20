@@ -91,7 +91,7 @@
 
   const gameCanvas = $('#game-canvas');
   if (!gameCanvas.getContext || !gameCanvas.getContext('2d')) {
-    document.body.innerHTML = '<div style="color:#fff;font:20px Arial;padding:40px;text-align:center">Твой браузер не поддерживает canvas.<br>Открой игру в свежем Chrome, Firefox или Safari.</div>';
+    document.body.innerHTML = '<div style="color:#fff;font:20px Arial;padding:40px;text-align:center">Не удалось запустить графику: canvas недоступен.</div>';
     return;
   }
   setupHiDPI(gameCanvas);
@@ -577,7 +577,18 @@
   $('#btn-info').addEventListener('click', (e) => { e.stopPropagation(); showInfo(); });
   $('#info-close').addEventListener('click', () => $('#overlay-info').classList.remove('active'));
 
-  $('#btn-map').addEventListener('click', () => fadeTo('map', buildMap));
+  // Одна кнопка в лобби на редактор и карту: сначала спрашиваем, куда идти.
+  // Редактор живёт в editor.js и подключён не всегда — если его нет, ведём на карту.
+  const toolsOverlay = $('#overlay-tools');
+  const closeTools = () => toolsOverlay.classList.remove('active');
+  $('#btn-tools').addEventListener('click', () => {
+    if (!window.GW_EDITOR) { fadeTo('map', buildMap); return; }
+    toolsOverlay.classList.add('active');
+  });
+  $('#tools-close').addEventListener('click', closeTools);
+  toolsOverlay.addEventListener('click', (e) => { if (e.target === toolsOverlay) closeTools(); });
+  $('#tools-editor').addEventListener('click', () => { closeTools(); window.GW_EDITOR.open(); });
+  $('#tools-map').addEventListener('click', () => { closeTools(); fadeTo('map', buildMap); });
   $('#map-back').addEventListener('click', () => fadeTo('lobby'));
 
   /* ---------- настройки: громкости и курсор ---------- */

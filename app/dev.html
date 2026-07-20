@@ -29,20 +29,13 @@
             <polygon points="34,14 97,50 34,86" fill="#ffd21e" stroke="#000" stroke-width="6" stroke-linejoin="round"/>
           </svg>
         </button>
-        <button class="gd-cross mid" id="btn-editor" title="Редактор">
+        <button class="gd-cross mid" id="btn-tools" title="Редактор и карта">
           <svg class="cross-icon" width="82" height="82" viewBox="0 0 100 100">
             <g transform="rotate(45 50 50)">
               <rect x="42" y="12" width="16" height="34" rx="3" fill="#c9c9c9" stroke="#000" stroke-width="5"/>
               <rect x="26" y="8" width="48" height="18" rx="5" fill="#8a8a8a" stroke="#000" stroke-width="5"/>
               <rect x="44" y="44" width="12" height="46" rx="4" fill="#a06a2c" stroke="#000" stroke-width="5"/>
             </g>
-          </svg>
-        </button>
-        <button class="gd-cross mid" id="btn-map" title="Карта прохождений">
-          <svg class="cross-icon" width="78" height="78" viewBox="0 0 100 100">
-            <path d="M14 26 L38 16 L62 26 L86 16 L86 74 L62 84 L38 74 L14 84 Z" fill="#e8e4d0" stroke="#000" stroke-width="6" stroke-linejoin="round"/>
-            <path d="M38 16 L38 74 M62 26 L62 84" stroke="#000" stroke-width="5"/>
-            <circle cx="50" cy="46" r="8" fill="#e83a3a" stroke="#000" stroke-width="4"/>
           </svg>
         </button>
       </div>
@@ -77,6 +70,35 @@
               <svg viewBox="0 0 100 100"><path d="M22 52 L42 72 L78 30" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- выбор: редактор или карта (одна кнопка в лобби вместо двух) -->
+      <div class="overlay" id="overlay-tools">
+        <div class="panel">
+          <h2 class="gd-title" style="font-size:36px">КУДА ИДЁМ?</h2>
+          <div class="icon-row">
+            <button class="icon-btn" id="tools-editor" title="Редактор уровней">
+              <svg viewBox="0 0 100 100">
+                <g transform="rotate(45 50 50)">
+                  <rect x="42" y="12" width="16" height="34" rx="3" fill="#c9c9c9" stroke="#000" stroke-width="5"/>
+                  <rect x="26" y="8" width="48" height="18" rx="5" fill="#8a8a8a" stroke="#000" stroke-width="5"/>
+                  <rect x="44" y="44" width="12" height="46" rx="4" fill="#a06a2c" stroke="#000" stroke-width="5"/>
+                </g>
+              </svg>
+            </button>
+            <button class="icon-btn" id="tools-map" title="Карта прохождений">
+              <svg viewBox="0 0 100 100">
+                <path d="M14 26 L38 16 L62 26 L86 16 L86 74 L62 84 L38 74 L14 84 Z" fill="#e8e4d0" stroke="#000" stroke-width="6" stroke-linejoin="round"/>
+                <path d="M38 16 L38 74 M62 26 L62 84" stroke="#000" stroke-width="5"/>
+                <circle cx="50" cy="46" r="8" fill="#e83a3a" stroke="#000" stroke-width="4"/>
+              </svg>
+            </button>
+            <button class="icon-btn red" id="tools-close" title="Закрыть">
+              <svg viewBox="0 0 100 100"><path d="M28 28 L72 72 M72 28 L28 72" stroke="#fff" stroke-width="14" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div class="gd-text" id="tools-hint">Молоток — редактор уровней. Карта — прохождение по узлам.</div>
         </div>
       </div>
 
@@ -307,6 +329,11 @@
         <label class="insp-row" id="insp-group-row">Группа: <input type="number" id="insp-group" min="0" max="99" value="0"></label>
         <label class="insp-row" id="insp-color-row">Цвет: <input type="color" id="insp-color" value="#ff00ff"></label>
         <label class="insp-row" id="insp-dur-row">Переход, сек: <input type="number" id="insp-dur" min="0" max="10" step="0.5" value="1"></label>
+        <div id="insp-alpha-rows">
+          <label class="insp-row">Группа: <input type="number" id="insp-atarget" min="1" max="99" value="1"></label>
+          <label class="insp-row">Прозрачность: <input type="number" id="insp-aopacity" min="0" max="1" step="0.1" value="0"></label>
+          <label class="insp-row">Время, сек: <input type="number" id="insp-adur" min="0" max="10" step="0.5" value="1"></label>
+        </div>
         <div id="insp-move-rows">
           <label class="insp-row">Двигать группу: <input type="number" id="insp-target" min="1" max="99" value="1"></label>
           <label class="insp-row">Сдвиг X (блоки): <input type="number" id="insp-dx" step="1" value="0"></label>
