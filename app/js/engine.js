@@ -593,6 +593,8 @@
 
   /* ---------- нормализация уровня ---------- */
   const TYPES = ['block', 'spike', 'coin', 'portal', 'trigger', 'orb', 'pad', 'speed', 'move', 'start', 'slope'];
+  // типы, которым можно ставить произвольный угол: их коллизия поворот не читает
+  const FREE_ROT = ['block', 'spike'];
   const DIFFICULTIES = ['easy', 'normal', 'hard', 'harder', 'insane', 'demon'];
   function normalizeLevel(raw) {
     const lvl = {
@@ -607,7 +609,14 @@
       if (!o || typeof o.x !== 'number' || !TYPES.includes(o.t)) return;
       // координаты с шагом 0.05 — поддержка свободного размещения в редакторе
       const obj = { t: o.t, x: Math.round(o.x * 20) / 20, y: Math.round((o.y || 0) * 20) / 20 };
-      if (o.rot) obj.rot = ((Math.round(o.rot / 90) * 90) % 360 + 360) % 360;
+      // У блоков и шипов поворот чисто внешний: их хитбоксы осевые и угол не читают,
+      // поэтому любой угол безопасен. У горок и батутов физика сравнивает rot
+      // точно с 0/90/180/270, так что там угол обязан оставаться кратным 90.
+      if (o.rot) {
+        obj.rot = FREE_ROT.includes(o.t)
+          ? ((Math.round(+o.rot) % 360) + 360) % 360
+          : ((Math.round(o.rot / 90) * 90) % 360 + 360) % 360;
+      }
       if (o.size && o.size !== 1) obj.size = Math.max(0.4, Math.min(3, +o.size));
       if (o.group) obj.group = Math.max(0, Math.min(99, Math.round(+o.group))) || 0;
       if (o.t === 'block') obj.style = [1, 2, 3, 4].includes(o.style) ? o.style : 1;
@@ -1989,6 +1998,7 @@
 
   /* ---------- экспорт ---------- */
   window.GW = {
+    FREE_ROT,
     B, VIEW_W, VIEW_H, GROUND_SCREEN_Y, PHYS, SPEED_COLORS,
     Game, Icons, Sfx,
     renderObject, normalizeLevel,

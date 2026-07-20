@@ -278,11 +278,25 @@
       <div id="ed-inspector">
         <b class="gd-text" style="font-size:15px" id="insp-title">Объект</b>
         <span id="insp-pos"></span>
+        <div class="insp-row" id="insp-move-row">
+          <span>Сдвиг:</span>
+          <div id="insp-dpad">
+            <button class="insp-btn" id="insp-up" title="Вверх на клетку">↑</button>
+            <button class="insp-btn" id="insp-left" title="Влево на клетку">←</button>
+            <button class="insp-btn" id="insp-down" title="Вниз на клетку">↓</button>
+            <button class="insp-btn" id="insp-right" title="Вправо на клетку">→</button>
+          </div>
+        </div>
         <div class="insp-row" id="insp-rot-row">
           <span>Поворот:</span>
-          <button class="insp-btn" id="insp-rotl" title="Повернуть влево">⟲</button>
-          <button class="insp-btn" id="insp-rotr" title="Повернуть вправо">⟳</button>
+          <button class="insp-btn" id="insp-rotl" title="Повернуть влево на 90°">⟲</button>
+          <button class="insp-btn" id="insp-rotr" title="Повернуть вправо на 90°">⟳</button>
           <span id="insp-rot-val">0°</span>
+        </div>
+        <div class="insp-row" id="insp-rotfine-row">
+          <span>Точно:</span>
+          <button class="insp-btn" id="insp-rotl15" title="−15° (только блоки и шипы)">−15°</button>
+          <button class="insp-btn" id="insp-rotr15" title="+15° (только блоки и шипы)">+15°</button>
         </div>
         <div class="insp-row" id="insp-size-row">
           <span>Размер:</span>

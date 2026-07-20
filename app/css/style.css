@@ -808,6 +808,18 @@ canvas { display: block; }
   background: linear-gradient(180deg, #4d5a75, #333d52);
 }
 .insp-btn:hover { background: linear-gradient(180deg, #5d6c8c, #414d68); }
+
+/* крестовина сдвига: вверх сверху, остальные под ним в ряд */
+#insp-dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 26px);
+  gap: 3px;
+}
+#insp-dpad .insp-btn { width: 26px; padding: 0; }
+#insp-up { grid-column: 2; grid-row: 1; }
+#insp-left { grid-column: 1; grid-row: 2; }
+#insp-down { grid-column: 2; grid-row: 2; }
+#insp-right { grid-column: 3; grid-row: 2; }
 #ed-inspector input[type="color"] { width: 44px; height: 30px; border: 2px solid #000; border-radius: 6px; background: none; padding: 0; cursor: pointer; }
 #ed-inspector input[type="number"] {
   width: 64px; font-family: var(--gd-font); font-weight: 900;

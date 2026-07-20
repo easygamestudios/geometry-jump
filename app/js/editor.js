@@ -538,14 +538,7 @@
       }
       if (dx || dy) {
         e.preventDefault();
-        const step = state.freeMove ? 0.2 : 1;
-        dx *= step; dy *= step;
-        const sel = [...selection];
-        if (sel.every(o => o.x + dx >= 0 && o.y + dy >= 0)) {
-          pushHistory();
-          sel.forEach(o => { o.x = snap05(o.x + dx); o.y = snap05(o.y + dy); });
-          markDirty(); updateInspector();
-        }
+        nudgeSelection(dx, dy);
       }
     }
   });
@@ -629,6 +622,10 @@
     const canRot = sel.some(o => ROTATABLE.includes(o.t));
     const canSize = sel.some(o => SIZABLE.includes(o.t));
     const canGroup = sel.some(o => GROUPABLE.includes(o.t));
+    // стрелки сдвига нужны при любом выделении, точный угол — только там,
+    // где он безопасен для физики
+    $('#insp-move-row').style.display = sel.length ? 'flex' : 'none';
+    $('#insp-rotfine-row').style.display = sel.some(o => FREE_ROT.includes(o.t)) ? 'flex' : 'none';
     $('#insp-rot-row').style.display = canRot ? 'flex' : 'none';
     $('#insp-size-row').style.display = canSize ? 'flex' : 'none';
     $('#insp-group-row').style.display = canGroup ? 'flex' : 'none';
@@ -654,6 +651,33 @@
       $('#insp-mdur').value = single.dur;
     }
     updateStackBtns();
+  }
+
+  // сдвиг выделенного: общая точка и для кнопок-стрелок, и для клавиатуры
+  function nudgeSelection(dx, dy) {
+    const sel = [...selection];
+    if (!sel.length) return;
+    const step = state.freeMove ? 0.2 : 1; // сетка выключена — шаг мельче
+    dx *= step; dy *= step;
+    if (!sel.every(o => o.x + dx >= 0 && o.y + dy >= 0)) return; // за край уровня не пускаем
+    pushHistory();
+    sel.forEach(o => { o.x = snap05(o.x + dx); o.y = snap05(o.y + dy); });
+    markDirty(); updateInspector();
+  }
+
+  // Точная подкрутка угла. Только блоки и шипы: у них хитбокс осевой и угол не читает,
+  // а у горок и батутов физика сравнивает rot ровно с 0/90/180/270 — наклони такую
+  // на 30°, и она будет выглядеть повёрнутой, а работать как неповёрнутая.
+  const FREE_ROT = (window.GW && window.GW.FREE_ROT) || ['block', 'spike'];
+  function rotateFine(delta) {
+    const sel = [...selection].filter(o => FREE_ROT.includes(o.t));
+    if (!sel.length) {
+      window.GW_APP.toast('Свободный угол — только у блоков и шипов: у горок и батутов от угла зависит физика', 3200);
+      return;
+    }
+    pushHistory();
+    sel.forEach(o => { o.rot = (((o.rot || 0) + delta) % 360 + 360) % 360; });
+    markDirty(); updateInspector();
   }
 
   function rotateSelection(delta) {
@@ -708,6 +732,12 @@
 
   $('#insp-rotl').addEventListener('click', () => rotateSelection(-90));
   $('#insp-rotr').addEventListener('click', () => rotateSelection(90));
+  $('#insp-rotl15').addEventListener('click', () => rotateFine(-15));
+  $('#insp-rotr15').addEventListener('click', () => rotateFine(15));
+  $('#insp-up').addEventListener('click', () => nudgeSelection(0, 1));
+  $('#insp-down').addEventListener('click', () => nudgeSelection(0, -1));
+  $('#insp-left').addEventListener('click', () => nudgeSelection(-1, 0));
+  $('#insp-right').addEventListener('click', () => nudgeSelection(1, 0));
   $('#insp-sizedn').addEventListener('click', () => resizeSelection(-1));
   $('#insp-sizeup').addEventListener('click', () => resizeSelection(1));
   $('#insp-del').addEventListener('click', deleteSelection);

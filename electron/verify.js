@@ -66,6 +66,35 @@ app.whenReady().then(async () => {
     await new Promise((r) => setTimeout(r, 2500));
   }
 
+  // новые кнопки инспектора: если промахнуться с id, editor.js падает на
+  // addEventListener при инициализации и редактор умирает целиком
+  let edit = null;
+  if (MODE === 'editor') {
+    edit = await win.webContents.executeJavaScript(`(() => {
+      const ids = ['insp-up','insp-down','insp-left','insp-right','insp-rotl15','insp-rotr15','insp-dpad','insp-move-row','insp-rotfine-row'];
+      const нет = ids.filter(id => !document.getElementById(id));
+      // сдвиг и точный угол должны работать и без выделения — просто без эффекта
+      let срыв = null;
+      try {
+        ['insp-up','insp-left','insp-rotl15'].forEach(id => document.getElementById(id).click());
+      } catch (e) { срыв = String(e); }
+      return {
+        редактор_жив: !!window.GW_EDITOR,
+        свободный_угол_экспортирован: !!(window.GW && window.GW.FREE_ROT),
+        типы_свободного_угла: (window.GW && window.GW.FREE_ROT) || null,
+        нет_кнопок: нет,
+        срыв_при_клике: срыв,
+        объектов_в_уровне: window.GW_EDITOR ? window.GW_EDITOR.state.level.objects.length : -1
+      };
+    })()`);
+    console.log('=== EDITOR ===');
+    console.log(JSON.stringify(edit, null, 2));
+    if (!edit.редактор_жив) problems.push('редактор не инициализировался');
+    if (edit.нет_кнопок.length) problems.push('нет кнопок в инспекторе: ' + edit.нет_кнопок.join(', '));
+    if (edit.срыв_при_клике) problems.push('клик по кнопке инспектора уронил редактор: ' + edit.срыв_при_клике);
+    if (!edit.свободный_угол_экспортирован) problems.push('GW.FREE_ROT не экспортирован — редактор возьмёт запасной список');
+  }
+
   // витрина орбов: все четыре вида рядом, чтобы разглядеть воронку и стрелки dash
   if (MODE === 'orbs') {
     // без блоков: земля в движке своя, а блоки на y=0 — это стена,
