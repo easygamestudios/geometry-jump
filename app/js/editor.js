@@ -61,6 +61,7 @@
       { id: 'orb-y',   label: 'Орб жёлтый',   make: (x, y) => ({ t: 'orb', x, y, kind: 'yellow' }) },
       { id: 'orb-p',   label: 'Орб розовый',  make: (x, y) => ({ t: 'orb', x, y, kind: 'pink' }) },
       { id: 'orb-b',   label: 'Орб гравитации', make: (x, y) => ({ t: 'orb', x, y, kind: 'blue' }) },
+      { id: 'orb-d',   label: 'Орб рывка',     make: (x, y) => ({ t: 'orb', x, y, kind: 'dash' }) },
       { id: 'pad-y',   label: 'Батут жёлтый', make: (x, y) => ({ t: 'pad', x, y, kind: 'yellow' }) },
       { id: 'pad-p',   label: 'Батут розовый', make: (x, y) => ({ t: 'pad', x, y, kind: 'pink' }) },
       { id: 'pad-b',   label: 'Батут гравитации', make: (x, y) => ({ t: 'pad', x, y, kind: 'blue' }) }

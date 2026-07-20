@@ -21,7 +21,12 @@ app.whenReady().then(async () => {
 
   const win = new BrowserWindow({
     width: 1280, height: 760, show: false,
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+    // backgroundThrottling: скрытое окно Chromium душит до пары кадров в секунду,
+    // и анимации (частицы, воронки) просто не успевают появиться к снимку
+    webPreferences: {
+      contextIsolation: true, nodeIntegration: false, sandbox: true,
+      backgroundThrottling: false
+    }
   });
 
   const consoleLog = [];
@@ -59,6 +64,105 @@ app.whenReady().then(async () => {
   if (MODE === 'export') {
     await win.webContents.executeJavaScript(`document.querySelector('#ed-export').click()`);
     await new Promise((r) => setTimeout(r, 2500));
+  }
+
+  // витрина орбов: все четыре вида рядом, чтобы разглядеть воронку и стрелки dash
+  if (MODE === 'orbs') {
+    // без блоков: земля в движке своя, а блоки на y=0 — это стена,
+    // в которую игрок влетает и умирает, гася все частицы
+    const level = {
+      name: 'orbs', bg: '#101a2e', difficulty: 'easy',
+      objects: [
+        { t: 'orb', x: 9, y: 4, kind: 'yellow' },
+        { t: 'orb', x: 13, y: 4, kind: 'pink' },
+        { t: 'orb', x: 17, y: 4, kind: 'blue' },
+        { t: 'orb', x: 21, y: 4, kind: 'dash' }
+      ]
+    };
+    await win.webContents.executeJavaScript(`(() => {
+      window.GW_APP.playLevel(${JSON.stringify(level)});
+      return 'ok';
+    })()`);
+    await new Promise((r) => setTimeout(r, 1300)); // камера доезжает до орбов, воронки успевают набраться
+
+    const st = await win.webContents.executeJavaScript(`(() => {
+      const g = window.GW_APP.game;
+      return JSON.stringify({ жив: !g.p.dead, воронок: g.particles.filter(p => p.vortex).length });
+    })()`);
+    console.log('=== ORBS ===');
+    console.log(st);
+    if (JSON.parse(st).воронок === 0) problems.push('воронка у орбов не появилась');
+    if (!JSON.parse(st).жив) problems.push('игрок умер в витрине орбов — кадр будет пустым');
+  }
+
+  // dash-орб: при зажатой кнопке игрок должен лететь ровно по линии орба,
+  // а после отпускания — падать
+  let dash = null;
+  if (MODE === 'dash') {
+    // высота 1 клетка: прыжок поднимает центр куба максимум на ~127 px,
+    // выше орб просто недостижим — радиус срабатывания всего 45 px.
+    // Орбы подряд — чтобы попадание не зависело от фазы прыжка.
+    const level = {
+      name: 'dash', bg: '#101a2e',
+      objects: [5, 6, 7, 8, 9, 10, 11].map((x) => ({ t: 'orb', x, y: 1, kind: 'dash' }))
+    };
+    await win.webContents.executeJavaScript(
+      `(() => { window.GW_APP.playLevel(${JSON.stringify(level)}); return 'ok'; })()`);
+    // ждём затемнение: до старта уровня game.running === false,
+    // и обработчик клавиш выходит сразу, не выставив hold
+    await new Promise((r) => setTimeout(r, 900));
+
+    // событие шлём внутри страницы: движок слушает keydown/keyup на window
+    // (engine.js:609), а sendInputEvent до скрытого несфокусированного окна не доходит.
+    // Писать в game.hold напрямую бесполезно — обработчик ввода его перетирает.
+    const key = (type) => `window.dispatchEvent(new KeyboardEvent('${type}', { code: 'Space', key: ' ', bubbles: true }));`;
+    const holdKey = (down) => win.webContents.executeJavaScript(
+      `(() => { ${key(down ? 'keydown' : 'keyup')} return 'ok'; })()`);
+    // «тап»: орб требует свежего нажатия (_pressBuf), а при зажатой кнопке куб
+    // сразу прыгает и обнуляет буфер — удержанием орб не поймать.
+    // keyup и keydown в одном синхронном вызове: кадр физики между ними не проскочит,
+    // поэтому уже начавшийся рывок не оборвётся.
+    const tap = () => win.webContents.executeJavaScript(
+      `(() => { ${key('keyup')} ${key('keydown')} return 'ok'; })()`);
+    await holdKey(true);
+
+    const sample = `(() => {
+      const g = window.GW_APP.game;
+      return { dash: !!g.p.dash, y: Math.round(g.p.y), vy: Math.round(g.p.vy), мертв: !!g.p.dead, hold: !!g.hold };
+    })()`;
+
+    let inDash = null;
+    for (let i = 0; i < 40 && !inDash; i++) {
+      await new Promise((r) => setTimeout(r, 60));
+      await tap();
+      const s = await win.webContents.executeJavaScript(sample);
+      if (s.dash) inDash = s;
+    }
+
+    // после входа игрок плавно выходит на линию орба, поэтому сравниваем
+    // два замера уже ПОСЛЕ выхода — там высота обязана стоять намертво
+    let settled = null, flat = null, afterRelease = null;
+    if (inDash) {
+      await new Promise((r) => setTimeout(r, 350));
+      settled = await win.webContents.executeJavaScript(sample);
+      await new Promise((r) => setTimeout(r, 300));
+      flat = await win.webContents.executeJavaScript(sample);
+      await holdKey(false); // отпускаем — рывок обязан прекратиться
+      await new Promise((r) => setTimeout(r, 350));
+      afterRelease = await win.webContents.executeJavaScript(sample);
+    } else {
+      await holdKey(false);
+    }
+
+    dash = { вошёл_в_рывок: inDash, вышел_на_линию: settled, ещё_через_0_3с: flat, после_отпускания: afterRelease };
+    if (!inDash) problems.push('dash-орб не сработал: игрок не вошёл в рывок');
+    else if (!settled || !settled.dash) problems.push('рывок оборвался сам, хотя кнопку держат');
+    else if (flat && Math.abs(flat.y - settled.y) > 2) problems.push(`в рывке высота плывёт: y ${settled.y} -> ${flat.y}`);
+    else if (flat && flat.vy !== 0) problems.push(`в рывке осталась вертикальная скорость: vy ${flat.vy}`);
+    else if (afterRelease && afterRelease.dash) problems.push('рывок не прекратился после отпускания кнопки');
+    // проверяем снижение, а не vy: с высоты 60 px падение занимает ~0,15 с,
+    // и к замеру игрок уже стоит на земле с обнулённой скоростью
+    else if (afterRelease && !(afterRelease.y < flat.y)) problems.push(`после отпускания игрок не пошёл вниз: y ${flat.y} -> ${afterRelease.y}`);
   }
 
   // реальный прогон уровня: игрок должен проехать вперёд сам по себе
@@ -156,6 +260,11 @@ app.whenReady().then(async () => {
   if (run) {
     console.log('=== PLAY ===');
     console.log(JSON.stringify(run, null, 2));
+  }
+
+  if (dash) {
+    console.log('=== DASH ===');
+    console.log(JSON.stringify(dash, null, 2));
   }
 
   if (MODE === 'export') {

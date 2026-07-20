@@ -18,12 +18,7 @@
     "afterPack": "electron/afterPack.js",
     "files": [
       "electron/**/*",
-      "app/**/*",
-      "!app/*.gwlevel.json",
-      "!app/tgt.jpg",
-      "!app/level1.mp3",
-      "!app/README.md",
-      "!app/.gitignore"
+      "app/**/*"
     ],
     "mac": {
       "category": "public.app-category.games",

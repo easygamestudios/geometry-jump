@@ -25,6 +25,16 @@
   };
 
   const SPEED_COLORS = { '0.8': '#ff9a3c', '1': '#38c9ff', '1.5': '#58e858', '2': '#ff58e0' };
+
+  // цвета орбов в одном месте: шар, глубина градиента, искры воронки, вспышка
+  const ORB_COLORS = {
+    yellow: { main: '#ffe36e', deep: '#f5bc1e', spark: '#ffe89a', burst: '#ffd94d' },
+    pink:   { main: '#ff9ae6', deep: '#ec74cc', spark: '#ffb8ec', burst: '#ff8ae0' },
+    blue:   { main: '#5ad2ff', deep: '#1a8fd8', spark: '#a6e8ff', burst: '#5ad2ff' },
+    dash:   { main: '#7dff8a', deep: '#23b53c', spark: '#b6ffbe', burst: '#4dff6a' }
+  };
+  const ORB_KINDS = ['yellow', 'pink', 'blue', 'dash'];
+  const orbKind = (o) => (ORB_KINDS.includes(o && o.kind) ? o.kind : 'yellow');
   const ZERO_OFF = { x: 0, y: 0 };
 
   /* ---------- цвета ---------- */
@@ -367,9 +377,9 @@
       // орб как в GD: полностью жёлтый шар (слабый — розовый),
       // ПРОБЕЛ, и вокруг — тонкое белое кольцо, которое пульсирует;
       // при активации кольцо «расплывается» (эффект whitering в игре)
-      const kind = obj.kind === 'pink' ? 'pink' : (obj.kind === 'blue' ? 'blue' : 'yellow');
-      const main = kind === 'pink' ? '#ff9ae6' : (kind === 'blue' ? '#5ad2ff' : '#ffe36e');
-      const deep = kind === 'pink' ? '#ec74cc' : (kind === 'blue' ? '#1a8fd8' : '#f5bc1e');
+      const kind = orbKind(obj);
+      const main = ORB_COLORS[kind].main;
+      const deep = ORB_COLORS[kind].deep;
       const tm = opts.time || 0;
       const act = (!opts.static && obj._fxT != null) ? tm - obj._fxT : -1;
       const overload = act >= 0 && act < 0.3;
@@ -396,6 +406,21 @@
       ctx.lineWidth = 2.5;
       ctx.strokeStyle = 'rgba(255,255,255,.95)';
       ctx.stroke();
+      // dash-орб: две шевронные стрелки вперёд — знак, что отсюда несёт рывком
+      if (kind === 'dash') {
+        ctx.lineWidth = 3.2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#0d3b16';
+        for (let i = 0; i < 2; i++) {
+          const dxc = -B * 0.09 + i * B * 0.13;
+          ctx.beginPath();
+          ctx.moveTo(dxc, -B * 0.1);
+          ctx.lineTo(dxc + B * 0.08, 0);
+          ctx.lineTo(dxc, B * 0.1);
+          ctx.stroke();
+        }
+      }
       ctx.restore();
     } else if (t === 'pad') {
       // батут как в GD: жёлтый полуовал-купол на земле (розовый — слабый,
@@ -523,7 +548,9 @@
       if (o.group) obj.group = Math.max(0, Math.min(99, Math.round(+o.group))) || 0;
       if (o.t === 'block') obj.style = [1, 2, 3, 4].includes(o.style) ? o.style : 1;
       if (o.t === 'portal') obj.mode = ['ship', 'wave'].includes(o.mode) ? o.mode : 'cube';
-      if (o.t === 'orb' || o.t === 'pad') obj.kind = ['pink', 'blue'].includes(o.kind) ? o.kind : 'yellow';
+      // dash — только у орбов: батут-рывок не предусмотрен
+      if (o.t === 'orb') obj.kind = ORB_KINDS.includes(o.kind) ? o.kind : 'yellow';
+      if (o.t === 'pad') obj.kind = ['pink', 'blue'].includes(o.kind) ? o.kind : 'yellow';
       if (o.t === 'speed') obj.mult = [0.8, 1, 1.5, 2].includes(+o.mult) ? +o.mult : 1;
       if (o.t === 'trigger') {
         obj.color = o.color || '#ff00ff';
@@ -642,6 +669,8 @@
       grav: cp ? (cp.grav || 1) : 1,   // 1 — обычная гравитация, -1 — перевёрнутая
       rot: 0,
       grounded: true,
+      dash: false,      // рывок от dash-орба не должен утекать в следующую попытку
+      dashY: 0,
       dead: false,
       won: false
     };
@@ -743,6 +772,9 @@
       const rawDt = dt;
       if (rawDt > 0) this._fps = this._fps ? this._fps * 0.9 + (1 / rawDt) * 0.1 : 1 / rawDt;
       if (dt > 0.05) dt = 0.05;
+      // дельта кадра — для отрисовки: физика идёт подшагами по 1/240,
+      // а частицы выбрасываются один раз за кадр, и по подшагу их было бы вчетверо меньше
+      this._frameDt = dt;
       if (!this.paused) {
         const STEP = 1 / 240;
         this._accum += dt;
@@ -837,6 +869,16 @@
 
     // частицы
     this.particles = this.particles.filter(pt => {
+      // воронка у орба: частица не летит по прямой, а закручивается к центру
+      if (pt.vortex) {
+        pt.ang += pt.angVel * dt;
+        pt.rad -= pt.radVel * dt;
+        pt.x = pt.cx + Math.cos(pt.ang) * pt.rad;
+        pt.y = pt.cy + Math.sin(pt.ang) * pt.rad;
+        pt.size = pt.size0 * Math.max(0.25, pt.rad / pt.rad0); // ближе к центру — мельче
+        pt.life -= dt;
+        return pt.life > 0 && pt.rad > B * 0.08; // втянуло внутрь — гаснет
+      }
       pt.x += pt.vx * dt; pt.y += pt.vy * dt;
       pt.vy -= 2400 * dt * (pt.grav || 0);
       if (pt.vrot) pt.rot = (pt.rot || 0) + pt.vrot * dt;
@@ -930,7 +972,14 @@
 
     // вертикаль по режимам (g = направление гравитации: 1 обычная, -1 перевёрнутая)
     const g = p.grav;
-    if (p.mode === 'cube') {
+    if (p.dash) {
+      // рывок от dash-орба: гравитации нет, игрока тянет по линии орба,
+      // держится ровно столько, сколько зажата кнопка
+      this._jumpQueued = false;
+      p.vy = 0;
+      p.y += (p.dashY - p.y) * Math.min(1, dt * 20); // мягко выходим на линию, без скачка
+      if (!this.hold) p.dash = false;
+    } else if (p.mode === 'cube') {
       if ((this.hold || this._jumpQueued) && p.grounded) {
         p.vy = PHYS.JUMP_V * g;
         p.grounded = false;
@@ -1101,6 +1150,12 @@
               p.grav *= -1;
               p.vy = -p.grav * 350;
               p.grounded = false;
+            } else if (o.kind === 'dash') {
+              // dash-орб: пока кнопку держат, игрок летит по прямой на высоте орба
+              p.dash = true;
+              p.dashY = cy - B / 2;
+              p.vy = 0;
+              p.grounded = false;
             } else {
               const k = o.kind === 'pink' ? 0.8 : 1.0;
               if (p.mode === 'cube') { p.vy = PHYS.JUMP_V * k * p.grav; p.grounded = false; }
@@ -1108,7 +1163,7 @@
             }
             this.jumpsAttempt++;
             // белая обводка «расплывается» + искры
-            const main = o.kind === 'pink' ? '#ff8ae0' : (o.kind === 'blue' ? '#5ad2ff' : '#ffd94d');
+            const main = ORB_COLORS[orbKind(o)].burst;
             this.spawnBurst(cx, cy, main, 6);
             this.spawnBurst(cx, cy, '#ffffff', 6);
             this.fx.push({ kind: 'whitering', x: cx, y: cy, t: 0, dur: 0.45, r0: B * 0.30 });
@@ -1208,6 +1263,22 @@
   /* часть шага после коллизий */
   Game.prototype._afterStep = function (dt) {
     const p = this.p;
+
+    // приземлился или упёрся в блок — рывок обрывается
+    if (p.dash && p.grounded) p.dash = false;
+
+    // зелёный след за рывком
+    if (p.dash && !p.dead && Math.random() < Math.min(0.9, 90 * dt)) {
+      this.particles.push({
+        x: p.x + B * (0.1 + Math.random() * 0.3),
+        y: p.y + B * (0.15 + Math.random() * 0.7),
+        vx: -180 - Math.random() * 160,
+        vy: (Math.random() - 0.5) * 60,
+        life: 0.18 + Math.random() * 0.16, max: 0.34,
+        size: 3 + Math.random() * 3.5,
+        color: Math.random() < 0.5 ? ORB_COLORS.dash.main : ORB_COLORS.dash.spark
+      });
+    }
 
     // вращение куба
     if (p.mode === 'cube') {
@@ -1390,6 +1461,8 @@
     // объекты (только видимые колонки индекса)
     const viewL = this.camX - 4 * B, viewR = this.camX + VW + 4 * B;
     const emitOk = !this.paused && !p.dead && !p.won;
+    // частиц в секунду, а не за кадр — иначе на 120 Гц их вдвое больше, чем на 60
+    const perSec = (n) => Math.min(0.9, n * (this._frameDt || 1 / 60));
     const drawObj = (o) => {
       if (o.t === 'trigger' || o.t === 'move' || o.t === 'start') return;
       const off = this.getOff(o);
@@ -1400,13 +1473,31 @@
       ctx.translate(this.sx(ox), this.sy(o.y * B + off.y));
       renderObject(ctx, o, { time: this.time, ghost });
       ctx.restore();
-      // бело-жёлтые частицы, всплывающие из батутов и орбов
-      if (emitOk && !o.used && (o.t === 'pad' || o.t === 'orb') && Math.random() < (o.t === 'pad' ? 0.14 : 0.07)) {
+      // орбы затягивают частицы воронкой, батуты — просто пускают искры вверх
+      if (emitOk && !o.used && o.t === 'orb' && Math.random() < perSec(58)) {
+        const oy = o.y * B + off.y;
+        const cx = ox + B / 2, cy = oy + B / 2;
+        const rad0 = B * (0.72 + Math.random() * 0.34);
+        const spin = Math.random() < 0.5 ? 1 : -1; // половина частиц крутится в другую сторону
+        this.particles.push({
+          vortex: true,
+          cx, cy,
+          ang: Math.random() * Math.PI * 2,
+          rad: rad0, rad0,
+          angVel: spin * (2.6 + Math.random() * 2.2),
+          radVel: rad0 / (0.52 + Math.random() * 0.26), // долетает до центра за время жизни
+          x: cx, y: cy,
+          life: 0.52 + Math.random() * 0.26, max: 0.78,
+          size: 0, size0: 2.6 + Math.random() * 2.4,
+          color: Math.random() < 0.45 ? '#ffffff' : ORB_COLORS[o.kind === 'pink' ? 'pink' : (o.kind === 'blue' ? 'blue' : (o.kind === 'dash' ? 'dash' : 'yellow'))].spark
+        });
+      }
+      if (emitOk && !o.used && o.t === 'pad' && Math.random() < perSec(8.4)) {
         const pink = o.kind === 'pink';
         const oy = o.y * B + off.y;
         this.particles.push({
-          x: ox + B * (o.t === 'pad' ? 0.15 + Math.random() * 0.7 : 0.3 + Math.random() * 0.4),
-          y: oy + (o.t === 'pad' ? B * 0.2 : B * (0.35 + Math.random() * 0.3)),
+          x: ox + B * (0.15 + Math.random() * 0.7),
+          y: oy + B * 0.2,
           vx: (Math.random() - 0.5) * 18,
           vy: 45 + Math.random() * 45,
           life: 0.5 + Math.random() * 0.4, max: 0.9,
@@ -1499,7 +1590,13 @@
       ctx.fillStyle = pt.color;
       const s = pt.size;
       const px = this.sx(pt.x), py = this.sy(pt.y);
-      if (pt.shape === 'shard') {
+      if (pt.vortex) {
+        // штрих по касательной к окружности — глазу читается как закрутка,
+        // отдельные квадратики выглядели бы просто россыпью точек
+        ctx.translate(px, py);
+        ctx.rotate(pt.ang + Math.PI / 2 * (pt.angVel > 0 ? 1 : -1));
+        ctx.fillRect(-s * 1.9, -s * 0.42, s * 3.8, s * 0.84);
+      } else if (pt.shape === 'shard') {
         ctx.translate(px, py);
         ctx.rotate(pt.rot || 0);
         ctx.beginPath();
