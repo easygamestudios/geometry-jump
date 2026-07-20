@@ -739,6 +739,8 @@
   // типы, которым можно ставить произвольный угол: их коллизия поворот не читает
   const FREE_ROT = ['block', 'spike'];
   const BLOCK_STYLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // 5+ — декоративные
+  const SPAWN_CELL = -6;        // клетка, на которой появляется игрок
+  const SPAWN_X = SPAWN_CELL * B;
   const MAX_COINS = 3;   // столько же, сколько секретных монет в уровне Geometry Dash
   const DIFFICULTIES = ['easy', 'normal', 'hard', 'harder', 'insane', 'demon'];
   function normalizeLevel(raw) {
@@ -811,7 +813,7 @@
     this.paused = false;
     this.iconId = 0;
     this.viewZoom = window.GW_VIEW_ZOOM || 1; // >1 — камера ближе (телефоны)
-    this.startX = -6 * B;
+    this.startX = SPAWN_X;
     this._raf = null;
     this._accum = 0;
     this._last = 0;
@@ -852,7 +854,7 @@
   Game.prototype.setLevel = function (rawLevel, savedCoins, startX, startY) {
     this.level = normalizeLevel(rawLevel);
     this.savedCoins = savedCoins || [];
-    this.startX = (typeof startX === 'number') ? startX : -6 * B;
+    this.startX = (typeof startX === 'number') ? startX : SPAWN_X;
     this.startY = (typeof startY === 'number') ? startY : 0;
     this.attempts = 0;
     this.practice = false;
@@ -2184,6 +2186,8 @@
 
   /* ---------- экспорт ---------- */
   window.GW = {
+    SPAWN_CELL,
+    SPAWN_X,
     FREE_ROT,
     MAX_COINS,
     B, VIEW_W, VIEW_H, GROUND_SCREEN_Y, PHYS, SPEED_COLORS,

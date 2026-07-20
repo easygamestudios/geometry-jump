@@ -395,7 +395,7 @@ app.whenReady().then(async () => {
         const g = window.GW_APP.game;
         if (!g) return null;
         const p = g.player || g.p || {};
-        return { x: p.x, y: p.y, мертв: p.dead, время: g.time, процент: g.percent };
+        return { x: p.x, y: p.y, мертв: p.dead, время: g.time, процент: g.percent, попыток: g.attempts };
       } catch (e) { return { ошибка: String(e) }; }
     })()`;
 
@@ -406,7 +406,12 @@ app.whenReady().then(async () => {
     run = { структура: shape, старт: t0, через_2_5с: t1 };
     if (!t0 || !t1) problems.push('игра не запустилась (нет GW_APP.game)');
     else if (typeof t0.x !== 'number' || typeof t1.x !== 'number') problems.push('не читается позиция игрока');
-    else if (!(t1.x > t0.x)) problems.push(`игрок не движется: x ${t0.x} -> ${t1.x}`);
+    // между замерами игрок может погибнуть и возродиться в начале — тогда x
+    // падает, хотя игра идёт. Такой перезапуск сам по себе доказывает, что
+    // игра живая, поэтому засчитываем и его
+    else if (!(t1.x > t0.x) && !(t1.попыток > t0.попыток)) {
+      problems.push(`игрок не движется: x ${t0.x} -> ${t1.x}, попыток ${t0.попыток} -> ${t1.попыток}`);
+    }
   }
 
   // музыка: без Range-запросов длительность приходит Infinity, и тогда
