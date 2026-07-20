@@ -178,11 +178,16 @@
   function drawBlockStyle(ctx, style) {
     // рисуем в центрированных координатах [-30..30]
     const h = B / 2;
-    ctx.fillStyle = '#0e0e14';
+    const solid = SOLID_STYLES.includes(style);
+    ctx.fillStyle = solid ? '#0e0e14' : 'rgba(14,14,20,.55)';
     ctx.fillRect(-h, -h, B, B);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(255,255,255,.92)';
-    ctx.strokeRect(-h + 1.5, -h + 1.5, B - 3, B - 3);
+    // белая обводка — признак твёрдости: у проходимых её быть не должно,
+    // иначе игрок будет ждать опоры там, где её нет
+    if (solid) {
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(255,255,255,.92)';
+      ctx.strokeRect(-h + 1.5, -h + 1.5, B - 3, B - 3);
+    }
     if (style === 1) {
       ctx.strokeStyle = 'rgba(255,255,255,.14)';
       ctx.lineWidth = 2;
@@ -738,7 +743,12 @@
   const TYPES = ['block', 'spike', 'coin', 'portal', 'trigger', 'orb', 'pad', 'speed', 'move', 'alpha', 'start', 'slope'];
   // типы, которым можно ставить произвольный угол: их коллизия поворот не читает
   const FREE_ROT = ['block', 'spike'];
-  const BLOCK_STYLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // 5+ — декоративные
+  const BLOCK_STYLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  // Твёрдые только стили 1 и 3 — ими выложена геометрия всех существующих
+  // уровней (Pulsar 468/325, impulse 113/394, new Adventure 372/586).
+  // Остальные декоративные: сквозь них проходят и обводки у них нет.
+  const SOLID_STYLES = [1, 3];
+  const isSolidBlock = (o) => SOLID_STYLES.includes(o.style || 1);
   const SPAWN_CELL = -6;        // клетка, на которой появляется игрок
   const SPAWN_X = SPAWN_CELL * B;
   const MAX_COINS = 3;   // столько же, сколько секретных монет в уровне Geometry Dash
@@ -750,6 +760,9 @@
       music: raw.music || null,
       musicName: raw.musicName || null,
       difficulty: DIFFICULTIES.includes(raw.difficulty) ? raw.difficulty : 'normal',
+      // Точка появления хранится в уровне. У старых её нет — им остаётся
+      // прежняя -6, иначе поехали бы начала уже собранных уровней.
+      spawnCell: isFinite(+raw.spawnCell) ? Math.round(+raw.spawnCell) : SPAWN_CELL,
       objects: []
     };
     let coins = 0;
@@ -854,7 +867,7 @@
   Game.prototype.setLevel = function (rawLevel, savedCoins, startX, startY) {
     this.level = normalizeLevel(rawLevel);
     this.savedCoins = savedCoins || [];
-    this.startX = (typeof startX === 'number') ? startX : SPAWN_X;
+    this.startX = (typeof startX === 'number') ? startX : this.level.spawnCell * B;
     this.startY = (typeof startY === 'number') ? startY : 0;
     this.attempts = 0;
     this.practice = false;
@@ -1279,6 +1292,7 @@
 
     {
       if (o.t === 'block') {
+        if (!isSolidBlock(o)) return false;   // декоративный — проходим насквозь
         const bs = B * (o.size || 1);
         const bx = baseX + (B - bs) / 2, by = baseY + (B - bs) / 2;
         if (p.mode === 'wave') {

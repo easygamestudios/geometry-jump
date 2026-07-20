@@ -29,7 +29,7 @@
 
   /* ---------- состояние ---------- */
   const state = {
-    level: { name: 'Мой уровень', bg: '#287dff', music: null, musicName: null, objects: [] },
+    level: { name: 'Мой уровень', bg: '#287dff', music: null, musicName: null, spawnCell: 0, objects: [] },
     camX: SPAWN_CELL - 1, camY: 0,   // чтобы метка старта была видна сразу
     zoom: 0.75,
     mode: 'build',
@@ -860,7 +860,8 @@
       return;
     }
     // старт: ближайшая к центру камеры старт-поза, иначе — левый край экрана
-    let sx = Math.max(SPAWN_CELL, Math.floor(state.camX)), sy = 0;
+    const lvlSpawn = isFinite(+state.level.spawnCell) ? +state.level.spawnCell : SPAWN_CELL;
+    let sx = Math.max(lvlSpawn, Math.floor(state.camX)), sy = 0;
     const starts = state.level.objects.filter(o => o.t === 'start');
     if (starts.length) {
       const camC = state.camX + W / (B * state.zoom) / 2;
