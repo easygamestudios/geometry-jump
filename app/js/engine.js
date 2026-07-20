@@ -1140,7 +1140,7 @@
         if (this._pressBuf > 0) {
           const cx = baseX + B / 2, cy = baseY + B / 2;
           const dx = (p.x + B / 2) - cx, dy = (p.y + B / 2) - cy;
-          const r = B * 0.75 * (o.size || 1);
+          const r = B * 0.95 * (o.size || 1);
           if (dx * dx + dy * dy < r * r) {
             o.used = true;
             o._fxT = this.time;
@@ -1267,16 +1267,18 @@
     // приземлился или упёрся в блок — рывок обрывается
     if (p.dash && p.grounded) p.dash = false;
 
-    // зелёный след за рывком
-    if (p.dash && !p.dead && Math.random() < Math.min(0.9, 90 * dt)) {
+    // огненный след за рывком: частицы срываются назад и остывают
+    // от бело-жёлтого к красному — цвет считается при отрисовке по остатку жизни
+    if (p.dash && !p.dead && Math.random() < Math.min(1, 130 * dt)) {
       this.particles.push({
-        x: p.x + B * (0.1 + Math.random() * 0.3),
-        y: p.y + B * (0.15 + Math.random() * 0.7),
-        vx: -180 - Math.random() * 160,
-        vy: (Math.random() - 0.5) * 60,
-        life: 0.18 + Math.random() * 0.16, max: 0.34,
-        size: 3 + Math.random() * 3.5,
-        color: Math.random() < 0.5 ? ORB_COLORS.dash.main : ORB_COLORS.dash.spark
+        fire: true,
+        x: p.x + B * (0.02 + Math.random() * 0.3),
+        y: p.y + B * (0.12 + Math.random() * 0.76),
+        vx: -240 - Math.random() * 240,
+        vy: (Math.random() - 0.3) * 110,
+        life: 0.2 + Math.random() * 0.22, max: 0.42,
+        size: 5.5 + Math.random() * 6,
+        color: '#ffd54a'
       });
     }
 
@@ -1474,7 +1476,7 @@
       renderObject(ctx, o, { time: this.time, ghost });
       ctx.restore();
       // орбы затягивают частицы воронкой, батуты — просто пускают искры вверх
-      if (emitOk && !o.used && o.t === 'orb' && Math.random() < perSec(58)) {
+      if (emitOk && !o.used && o.t === 'orb' && Math.random() < perSec(24)) {
         const oy = o.y * B + off.y;
         const cx = ox + B / 2, cy = oy + B / 2;
         const rad0 = B * (0.72 + Math.random() * 0.34);
@@ -1590,12 +1592,24 @@
       ctx.fillStyle = pt.color;
       const s = pt.size;
       const px = this.sx(pt.x), py = this.sy(pt.y);
-      if (pt.vortex) {
+      if (pt.fire) {
+        // пламя: свежая частица бело-жёлтая, дальше рыжеет и гаснет в красный,
+        // к концу жизни раздувается — так огонь выглядит живым, а не роем точек
+        const k = Math.max(0, Math.min(1, pt.life / (pt.max || 0.42)));
+        const col = k > 0.62 ? lerpColor('#ffd54a', '#fff6c9', (k - 0.62) / 0.38)
+                  : k > 0.30 ? lerpColor('#ff7a1f', '#ffd54a', (k - 0.30) / 0.32)
+                  :            lerpColor('#c2260c', '#ff7a1f', k / 0.30);
+        ctx.globalAlpha = Math.min(1, k * 1.6);
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(px, py, s * (0.42 + (1 - k) * 0.62), 0, Math.PI * 2);
+        ctx.fill();
+      } else if (pt.vortex) {
         // штрих по касательной к окружности — глазу читается как закрутка,
         // отдельные квадратики выглядели бы просто россыпью точек
         ctx.translate(px, py);
         ctx.rotate(pt.ang + Math.PI / 2 * (pt.angVel > 0 ? 1 : -1));
-        ctx.fillRect(-s * 1.9, -s * 0.42, s * 3.8, s * 0.84);
+        ctx.fillRect(-s * 1.05, -s * 0.45, s * 2.1, s * 0.9);
       } else if (pt.shape === 'shard') {
         ctx.translate(px, py);
         ctx.rotate(pt.rot || 0);
@@ -1782,9 +1796,9 @@
         ctx.lineJoin = 'round';
         ctx.strokeStyle = '#000';
         const GREEN = '#3ee52c', GREEN_D = '#1fae12', CYAN = '#4de8ff';
-        const K = 0.78; // масштаб корпуса
+        const K = 0.70; // масштаб корпуса
         // кубик-пилот: крупный, выглядывает над корпусом за голубой рейкой
-        Icons.draw(ctx, this.iconId, B * 0.02, -B * 0.4, B * 0.58, 0);
+        Icons.draw(ctx, this.iconId, B * 0.02, -B * 0.38, B * 0.54, 0);
         // корпус (та самая текстура по референсу из GD)
         ctx.save();
         ctx.scale(K, K);

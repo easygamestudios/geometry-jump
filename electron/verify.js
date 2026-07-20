@@ -147,6 +147,9 @@ app.whenReady().then(async () => {
       settled = await win.webContents.executeJavaScript(sample);
       await new Promise((r) => setTimeout(r, 300));
       flat = await win.webContents.executeJavaScript(sample);
+      // отдельный кадр прямо в рывке: на итоговом снимке огня уже не будет
+      fs.mkdirSync(SHOT_DIR, { recursive: true });
+      fs.writeFileSync(path.join(SHOT_DIR, 'dash-active.png'), (await win.capturePage()).toPNG());
       await holdKey(false); // отпускаем — рывок обязан прекратиться
       await new Promise((r) => setTimeout(r, 350));
       afterRelease = await win.webContents.executeJavaScript(sample);
