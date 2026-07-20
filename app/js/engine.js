@@ -739,7 +739,7 @@
   // типы, которым можно ставить произвольный угол: их коллизия поворот не читает
   const FREE_ROT = ['block', 'spike'];
   const BLOCK_STYLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // 5+ — декоративные
-  const SPAWN_CELL = 0;         // клетка, на которой появляется игрок — совпадает с полосой старта в редакторе
+  const SPAWN_CELL = -6;        // клетка, на которой появляется игрок
   const SPAWN_X = SPAWN_CELL * B;
   const MAX_COINS = 3;   // столько же, сколько секретных монет в уровне Geometry Dash
   const DIFFICULTIES = ['easy', 'normal', 'hard', 'harder', 'insane', 'demon'];
@@ -1820,7 +1820,7 @@
     }
 
     // текст попытки
-    if (p.x < this.startX + 10 * B) {
+    if (p.x < this.startX + 10 * B && this.startX < 0) {
       ctx.save();
       ctx.font = '900 44px "Arial Black", Arial';
       ctx.textAlign = 'center';

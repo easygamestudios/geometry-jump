@@ -254,7 +254,10 @@ app.whenReady().then(async () => {
   if (MODE === 'wave') {
     await win.webContents.executeJavaScript(`(() => {
       window.GW_APP.playLevel({ name: 'wave', bg: '#101a2e',
-        objects: [{ t: 'portal', x: 6, y: 2, mode: 'wave' }] });
+        objects: [{ t: 'portal', x: 6, y: 2, mode: 'wave' },
+                  { t: 'portal', x: 16, y: 2, mode: 'wave' },
+                  { t: 'portal', x: 20, y: 2, mode: 'ship' },
+                  { t: 'portal', x: 24, y: 2, mode: 'cube' }] });
       return 'ok';
     })()`);
     await new Promise((r) => setTimeout(r, 900));
@@ -291,9 +294,9 @@ app.whenReady().then(async () => {
   if (MODE === 'alpha') {
     await win.webContents.executeJavaScript(`(() => {
       window.GW_APP.playLevel({ name: 'alpha', bg: '#101a2e', objects: [
-        { t: 'block', x: 34, y: 0, style: 1, group: 5 },
-        { t: 'block', x: 34, y: 1, style: 1, group: 5 },
-        { t: 'alpha', x: 2, y: 3, target: 5, opacity: 0, dur: 1 }
+        { t: 'block', x: 12, y: 0, style: 1, group: 5 },
+        { t: 'block', x: 12, y: 1, style: 1, group: 5 },
+        { t: 'alpha', x: 4, y: 3, target: 5, opacity: 0, dur: 1 }
       ] });
       return 'ok';
     })()`);
@@ -309,9 +312,8 @@ app.whenReady().then(async () => {
     const в_процессе = await win.webContents.executeJavaScript(read);
     await new Promise((r) => setTimeout(r, 900));
     const после = await win.webContents.executeJavaScript(read);
-    // блок стал невидимым — но игрок обязан об него разбиться.
-    // Он на x=34, до него ~3,3 с от старта — ждём с запасом
-    await new Promise((r) => setTimeout(r, 1800));
+    // блок стал невидимым — но игрок обязан об него разбиться
+    await new Promise((r) => setTimeout(r, 900));
     const врезался = await win.webContents.executeJavaScript(`(() => {
       const g = window.GW_APP.game;
       return { мертв_или_перезапуск: !!g.p.dead || g.attempts > 1, попыток: g.attempts };

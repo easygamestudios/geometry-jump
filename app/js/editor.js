@@ -30,7 +30,7 @@
   /* ---------- состояние ---------- */
   const state = {
     level: { name: 'Мой уровень', bg: '#287dff', music: null, musicName: null, objects: [] },
-    camX: -3, camY: 0,
+    camX: SPAWN_CELL - 1, camY: 0,   // чтобы метка старта была видна сразу
     zoom: 0.75,
     mode: 'build',
     palTab: 0,
@@ -302,8 +302,9 @@
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
     }
 
-    // Старт игрока: полоса стоит на SPAWN_CELL, и движок ставит игрока туда же.
-    // Клетку берём из движка, чтобы значения не разъехались.
+    // Старт игрока. Раньше метка стояла на клетке 0, а движок ставит игрока
+    // на SPAWN_CELL (−6) — метка врала на шесть клеток. Берём клетку из движка,
+    // чтобы значения снова не разъехались.
     const spawnPx = cellX2px(SPAWN_CELL);
     if (spawnPx > -60 && spawnPx < W + 60) {
       ctx.save();
@@ -317,6 +318,20 @@
       ctx.font = '900 15px "Arial Black", Arial';
       ctx.fillStyle = 'rgba(120,255,120,.9)';
       ctx.fillText('СТАРТ', spawnPx + 2, groundPy - cs - 8); // над клеткой: снизу мешает полоса навигации
+      ctx.restore();
+    }
+
+    // клетка 0 — левый край области, где можно строить: объекты с x < 0 не ставятся.
+    // Отдельная тонкая линия, чтобы её не принимали за место появления игрока
+    const zeroX = cellX2px(0);
+    if (zeroX > -40 && zeroX < W + 40) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,.28)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(zeroX, 0); ctx.lineTo(zeroX, groundPy); ctx.stroke();
+      ctx.font = '900 13px "Arial Black", Arial';
+      ctx.fillStyle = 'rgba(255,255,255,.5)';
+      ctx.fillText('0', zeroX + 5, groundPy - cs - 8);
       ctx.restore();
     }
 
