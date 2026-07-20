@@ -168,6 +168,40 @@ app.whenReady().then(async () => {
     else if (afterRelease && !(afterRelease.y < flat.y)) problems.push(`после отпускания игрок не пошёл вниз: y ${flat.y} -> ${afterRelease.y}`);
   }
 
+  // батут: обычный на полу обязан подбрасывать (я менял условие попадания),
+  // а повёрнутый на 180° должен ловить игрока у верха клетки, а не у низа
+  let pads = null;
+  if (MODE === 'pad') {
+    await win.webContents.executeJavaScript(`(() => {
+      window.GW_APP.playLevel({ name: 'pad', bg: '#101a2e',
+        objects: [{ t: 'pad', x: 8, y: 0, kind: 'yellow' }] });
+      return 'ok';
+    })()`);
+    await new Promise((r) => setTimeout(r, 900));
+
+    let launched = null;
+    for (let i = 0; i < 30 && !launched; i++) {
+      await new Promise((r) => setTimeout(r, 60));
+      const s = await win.webContents.executeJavaScript(`(() => {
+        const g = window.GW_APP.game;
+        return { y: Math.round(g.p.y), vy: Math.round(g.p.vy), used: !!(g.level.objects[0] || {}).used };
+      })()`);
+      if (s.used && s.y > 40) launched = s;
+    }
+
+    // геометрия повёрнутого батута: полоса должна лежать у верха клетки
+    const box = await win.webContents.executeJavaScript(`(() => {
+      const B = 60, thick = B * 0.35, inset = B * 0.08, baseY = 0;
+      const низ = { py1: baseY, py2: baseY + thick };
+      const верх = { py1: baseY + B - thick, py2: baseY + B };
+      return { пол: низ, потолок: верх, пересекаются: низ.py2 > верх.py1 };
+    })()`);
+
+    pads = { подбросил: launched, полосы: box };
+    if (!launched) problems.push('обычный батут перестал подбрасывать');
+    if (box.пересекаются) problems.push('полосы батута на полу и на потолке накладываются');
+  }
+
   // реальный прогон уровня: игрок должен проехать вперёд сам по себе
   let run = null;
   if (MODE === 'play') {
@@ -263,6 +297,11 @@ app.whenReady().then(async () => {
   if (run) {
     console.log('=== PLAY ===');
     console.log(JSON.stringify(run, null, 2));
+  }
+
+  if (pads) {
+    console.log('=== PAD ===');
+    console.log(JSON.stringify(pads, null, 2));
   }
 
   if (dash) {

@@ -1172,10 +1172,27 @@
       }
 
       if (o.t === 'pad' && !o.used && p.mode !== 'wave') {
-        // площадка занимает нижнюю часть клетки
-        const px1 = baseX + B * 0.08, px2 = baseX + B * 0.92;
-        const py1 = baseY, py2 = baseY + B * 0.35;
-        if (p.x + B > px1 && p.x < px2 && p.y <= py2 && p.y + B > py1) {
+        // площадка занимает узкую полосу клетки со стороны, куда она повёрнута:
+        // без этого батут на потолке рисовался бы наверху, а срабатывал внизу.
+        // Направление толчка не трогаем — оно считается от гравитации игрока,
+        // а на потолок попадают уже перевёрнутыми, так что толкает верно.
+        const prot = ((o.rot || 0) % 360 + 360) % 360;
+        const thick = B * 0.35, inset = B * 0.08;
+        let px1, px2, py1, py2;
+        if (prot === 180) {        // на потолке
+          px1 = baseX + inset; px2 = baseX + B - inset;
+          py1 = baseY + B - thick; py2 = baseY + B;
+        } else if (prot === 90) {  // на левой стенке
+          px1 = baseX; px2 = baseX + thick;
+          py1 = baseY + inset; py2 = baseY + B - inset;
+        } else if (prot === 270) { // на правой стенке
+          px1 = baseX + B - thick; px2 = baseX + B;
+          py1 = baseY + inset; py2 = baseY + B - inset;
+        } else {                   // на полу
+          px1 = baseX + inset; px2 = baseX + B - inset;
+          py1 = baseY; py2 = baseY + thick;
+        }
+        if (p.x + B > px1 && p.x < px2 && p.y < py2 && p.y + B > py1) {
           o.used = true;
           o._fxT = this.time;
           if (o.kind === 'blue') {

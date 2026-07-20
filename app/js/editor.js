@@ -86,7 +86,7 @@
     return null;
   }
 
-  const ROTATABLE = ['block', 'spike', 'slope'];
+  const ROTATABLE = ['block', 'spike', 'slope', 'pad'];
   const SIZABLE = ['block', 'spike', 'coin', 'orb'];
   const GROUPABLE = ['block', 'spike', 'coin', 'orb', 'pad', 'slope'];
 
