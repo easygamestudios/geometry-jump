@@ -33,6 +33,13 @@
     blue:   { main: '#5ad2ff', deep: '#1a8fd8', spark: '#a6e8ff', burst: '#5ad2ff' },
     dash:   { main: '#7dff8a', deep: '#23b53c', spark: '#b6ffbe', burst: '#4dff6a' }
   };
+  // порталы: рама, глубина жерла и бегущий блик
+  const PORTAL_COLORS = {
+    cube: { main: '#3cff6e', core: '#05301a', mid: '#0b6b34', edge: '#25c962', shine: '#c2ffd6' },
+    ship: { main: '#ff3cf7', core: '#320a33', mid: '#7d1082', edge: '#cf24d2', shine: '#ffc4fc' },
+    wave: { main: '#22d6ff', core: '#052733', mid: '#0a5f80', edge: '#1aabd2', shine: '#bcf2ff' }
+  };
+
   const ORB_KINDS = ['yellow', 'pink', 'blue', 'dash'];
   const orbKind = (o) => (ORB_KINDS.includes(o && o.kind) ? o.kind : 'yellow');
   const ZERO_OFF = { x: 0, y: 0 };
@@ -260,38 +267,95 @@
     const rot = obj.rot || 0;
 
     if (t === 'portal') {
-      const mode = obj.mode;
-      const col = mode === 'ship' ? '#ff3cf7' : (mode === 'wave' ? '#22d6ff' : '#3cff6e');
-      const fill = mode === 'ship' ? 'rgba(255,60,247,.22)' : (mode === 'wave' ? 'rgba(34,214,255,.22)' : 'rgba(60,255,110,.22)');
+      const C = PORTAL_COLORS[obj.mode] || PORTAL_COLORS.cube;
+      const tm = opts.time || 0;
+      const RX = B * 0.5, RY = B * 1.45;
       ctx.save();
       ctx.translate(B / 2, -1.5 * B);
-      ctx.shadowColor = col; ctx.shadowBlur = opts.static ? 0 : 22;
+
+      // жерло: тёмное в глубине, разгорается к краю
+      const mouth = ctx.createRadialGradient(0, 0, RX * 0.12, 0, 0, RY);
+      mouth.addColorStop(0, C.core);
+      mouth.addColorStop(0.55, C.mid);
+      mouth.addColorStop(1, C.edge);
       ctx.beginPath();
-      ctx.ellipse(0, 0, B * 0.52, B * 1.42, 0, 0, Math.PI * 2);
-      ctx.fillStyle = fill;
+      ctx.ellipse(0, 0, RX, RY, 0, 0, Math.PI * 2);
+      ctx.fillStyle = mouth;
       ctx.fill();
-      ctx.lineWidth = 9; ctx.strokeStyle = col;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
+
+      // блик, бегущий снизу вверх — портал «дышит»
+      if (!opts.static) {
+        ctx.save();
+        ctx.clip();
+        const by = (1 - ((tm * 0.55) % 1) * 2) * RY;
+        ctx.globalAlpha = 0.45;
+        ctx.fillStyle = C.shine;
+        ctx.fillRect(-RX, by - RY * 0.1, RX * 2, RY * 0.2);
+        ctx.restore();
+      }
+
+      // свечение вокруг рамы: несколько полупрозрачных обводок вместо
+      // shadowBlur — тот заметно дороже, а порталов на экране бывает много
       ctx.beginPath();
-      ctx.ellipse(0, 0, B * 0.30, B * 1.12, 0, 0, Math.PI * 2);
-      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.75)';
+      ctx.ellipse(0, 0, RX, RY, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = C.main;
+      if (!opts.static) {
+        ctx.globalAlpha = 0.14; ctx.lineWidth = 22; ctx.stroke();
+        ctx.globalAlpha = 0.3; ctx.lineWidth = 14; ctx.stroke();
+      }
+      ctx.globalAlpha = 1; ctx.lineWidth = 8; ctx.stroke();
+
+      // тонкое внутреннее кольцо
+      ctx.beginPath();
+      ctx.ellipse(0, 0, RX * 0.64, RY * 0.82, 0, 0, Math.PI * 2);
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = 'rgba(255,255,255,.7)';
       ctx.stroke();
+
+      // навершия сверху и снизу — по ним портал читается издалека
+      ctx.fillStyle = C.main;
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 3;
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(0, s * RY, B * 0.14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+
       // пиктограмма режима
-      ctx.fillStyle = 'rgba(255,255,255,.9)';
-      ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-      if (mode === 'ship') {
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2.5;
+      ctx.lineJoin = 'round';
+      if (obj.mode === 'ship') {
+        // корпус с носом вперёд и куполом сверху — иначе читается как клякса
         ctx.beginPath();
-        ctx.ellipse(0, 0, B * 0.20, B * 0.10, 0, 0, Math.PI * 2);
+        ctx.moveTo(-B * 0.2, B * 0.02);
+        ctx.lineTo(-B * 0.13, B * 0.1);
+        ctx.lineTo(B * 0.11, B * 0.1);
+        ctx.lineTo(B * 0.23, 0);
+        ctx.lineTo(B * 0.11, -B * 0.06);
+        ctx.lineTo(-B * 0.13, -B * 0.06);
+        ctx.closePath();
         ctx.fill(); ctx.stroke();
-      } else if (mode === 'wave') {
         ctx.beginPath();
-        ctx.moveTo(-B * 0.16, -B * 0.10); ctx.lineTo(0, B * 0.08); ctx.lineTo(B * 0.16, -B * 0.10);
-        ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,.9)';
+        ctx.arc(-B * 0.01, -B * 0.06, B * 0.075, Math.PI, 0);
+        ctx.fill(); ctx.stroke();
+      } else if (obj.mode === 'wave') {
+        ctx.beginPath();
+        ctx.moveTo(-B * 0.2, B * 0.1);
+        ctx.lineTo(-B * 0.02, -B * 0.1);
+        ctx.lineTo(B * 0.06, B * 0.02);
+        ctx.lineTo(B * 0.22, -B * 0.12);
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#fff';
+        ctx.lineCap = 'round';
         ctx.stroke();
       } else {
-        ctx.fillRect(-B * 0.11, -B * 0.11, B * 0.22, B * 0.22);
-        ctx.strokeRect(-B * 0.11, -B * 0.11, B * 0.22, B * 0.22);
+        const s = B * 0.13;
+        ctx.fillRect(-s, -s, s * 2, s * 2);
+        ctx.strokeRect(-s, -s, s * 2, s * 2);
       }
       ctx.restore();
       return;
@@ -690,6 +754,7 @@
     this.deadTimer = 0;
     this.particles = [];
     this.waveTrail = [];
+    this._waveDir = null;   // наклон предыдущего кадра: по нему ставится излом следа
     this.cpAutoTimer = 0;
     this.fx = [];
     this.deathFx = null;
@@ -869,16 +934,6 @@
 
     // частицы
     this.particles = this.particles.filter(pt => {
-      // воронка у орба: частица не летит по прямой, а закручивается к центру
-      if (pt.vortex) {
-        pt.ang += pt.angVel * dt;
-        pt.rad -= pt.radVel * dt;
-        pt.x = pt.cx + Math.cos(pt.ang) * pt.rad;
-        pt.y = pt.cy + Math.sin(pt.ang) * pt.rad;
-        pt.size = pt.size0 * Math.max(0.25, pt.rad / pt.rad0); // ближе к центру — мельче
-        pt.life -= dt;
-        return pt.life > 0 && pt.rad > B * 0.08; // втянуло внутрь — гаснет
-      }
       pt.x += pt.vx * dt; pt.y += pt.vy * dt;
       pt.vy -= 2400 * dt * (pt.grav || 0);
       if (pt.vrot) pt.rot = (pt.rot || 0) + pt.vrot * dt;
@@ -1492,25 +1547,7 @@
       ctx.translate(this.sx(ox), this.sy(o.y * B + off.y));
       renderObject(ctx, o, { time: this.time, ghost });
       ctx.restore();
-      // орбы затягивают частицы воронкой, батуты — просто пускают искры вверх
-      if (emitOk && !o.used && o.t === 'orb' && Math.random() < perSec(24)) {
-        const oy = o.y * B + off.y;
-        const cx = ox + B / 2, cy = oy + B / 2;
-        const rad0 = B * (0.72 + Math.random() * 0.34);
-        const spin = Math.random() < 0.5 ? 1 : -1; // половина частиц крутится в другую сторону
-        this.particles.push({
-          vortex: true,
-          cx, cy,
-          ang: Math.random() * Math.PI * 2,
-          rad: rad0, rad0,
-          angVel: spin * (2.6 + Math.random() * 2.2),
-          radVel: rad0 / (0.52 + Math.random() * 0.26), // долетает до центра за время жизни
-          x: cx, y: cy,
-          life: 0.52 + Math.random() * 0.26, max: 0.78,
-          size: 0, size0: 2.6 + Math.random() * 2.4,
-          color: Math.random() < 0.45 ? '#ffffff' : ORB_COLORS[o.kind === 'pink' ? 'pink' : (o.kind === 'blue' ? 'blue' : (o.kind === 'dash' ? 'dash' : 'yellow'))].spark
-        });
-      }
+      // орбы частиц не дают — так спокойнее и легче; искры остались у батутов
       if (emitOk && !o.used && o.t === 'pad' && Math.random() < perSec(8.4)) {
         const pink = o.kind === 'pink';
         const oy = o.y * B + off.y;
@@ -1621,12 +1658,6 @@
         ctx.beginPath();
         ctx.arc(px, py, s * (0.42 + (1 - k) * 0.62), 0, Math.PI * 2);
         ctx.fill();
-      } else if (pt.vortex) {
-        // штрих по касательной к окружности — глазу читается как закрутка,
-        // отдельные квадратики выглядели бы просто россыпью точек
-        ctx.translate(px, py);
-        ctx.rotate(pt.ang + Math.PI / 2 * (pt.angVel > 0 ? 1 : -1));
-        ctx.fillRect(-s * 1.05, -s * 0.45, s * 2.1, s * 0.9);
       } else if (pt.shape === 'shard') {
         ctx.translate(px, py);
         ctx.rotate(pt.rot || 0);
@@ -1683,28 +1714,42 @@
       ctx.restore();
     }
 
-    // след волны — выходит точно из хвоста стрелки (учитываем её наклон ±45°)
+    // След волны — прямые палки, а не цепочка кружков: раньше точка писалась
+    // каждый кадр, и отрезки между ними были короче своей толщины.
+    // Теперь вершина добавляется только при смене наклона: излом остаётся
+    // на месте, а от него тянется новая палка. Выходит точно из хвоста стрелки.
     if (p.mode === 'wave' && !p.dead && !this.paused) {
       const dir = p.grounded || p.y + B >= PHYS.ARENA_CEIL ? 0 : (p.vy > 0 ? -1 : 1);
       const ang = dir * Math.PI / 4;
       const tail = -B * 0.15; // локальный x хвоста-выреза стрелки (с учётом масштаба волны)
-      this.waveTrail.push({
-        x: p.x + B / 2 + tail * Math.cos(ang),
-        y: p.y + B / 2 - tail * Math.sin(ang)
-      });
-      if (this.waveTrail.length > 40) this.waveTrail.shift();
+      const tx = p.x + B / 2 + tail * Math.cos(ang);
+      const ty = p.y + B / 2 - tail * Math.sin(ang);
+      const n = this.waveTrail.length;
+      if (!n) {
+        this.waveTrail.push({ x: tx, y: ty }, { x: tx, y: ty }); // излом + подвижный кончик
+        this._waveDir = dir;
+      } else if (dir !== this._waveDir) {
+        this.waveTrail.push({ x: tx, y: ty }); // прежний кончик застыл изломом
+        this._waveDir = dir;
+      } else {
+        this.waveTrail[n - 1].x = tx; // та же палка — просто тянем её конец
+        this.waveTrail[n - 1].y = ty;
+      }
+      if (this.waveTrail.length > 14) this.waveTrail.shift();
     } else if (this.waveTrail.length) {
-      this.waveTrail.splice(0, 2);
+      this.waveTrail.shift();
     }
     if (this.waveTrail.length > 1) {
       ctx.save();
       ctx.lineCap = 'round';
-      for (let i = 1; i < this.waveTrail.length; i++) {
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#7de8ff';
+      const N = this.waveTrail.length;
+      for (let i = 1; i < N; i++) {
         const a = this.waveTrail[i - 1], b = this.waveTrail[i];
-        const k = i / this.waveTrail.length;
-        ctx.globalAlpha = k * 0.5;
-        ctx.lineWidth = 3 + k * 9;
-        ctx.strokeStyle = '#7de8ff';
+        const k = N > 2 ? (i - 1) / (N - 2) : 1; // 0 — дальний хвост, 1 — у самой стрелки
+        ctx.globalAlpha = 0.12 + k * 0.48;
+        ctx.lineWidth = 3 + k * 8;
         ctx.beginPath();
         ctx.moveTo(this.sx(a.x), this.sy(a.y));
         ctx.lineTo(this.sx(b.x), this.sy(b.y));

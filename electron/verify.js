@@ -87,12 +87,19 @@ app.whenReady().then(async () => {
 
     const st = await win.webContents.executeJavaScript(`(() => {
       const g = window.GW_APP.game;
-      return JSON.stringify({ жив: !g.p.dead, воронок: g.particles.filter(p => p.vortex).length });
+      const орбы = g.level.objects.filter(o => o.t === 'orb');
+      return JSON.stringify({
+        жив: !g.p.dead,
+        орбов: орбы.length,
+        виды: орбы.map(o => o.kind),
+        // орбы намеренно без частиц: рядом с ними не должно висеть ничего лишнего
+        частиц_в_кадре: g.particles.length
+      });
     })()`);
     console.log('=== ORBS ===');
     console.log(st);
-    if (JSON.parse(st).воронок === 0) problems.push('воронка у орбов не появилась');
     if (!JSON.parse(st).жив) problems.push('игрок умер в витрине орбов — кадр будет пустым');
+    if (JSON.parse(st).орбов !== 4) problems.push('в витрине не все четыре вида орбов');
   }
 
   // dash-орб: при зажатой кнопке игрок должен лететь ровно по линии орба,
@@ -166,6 +173,46 @@ app.whenReady().then(async () => {
     // проверяем снижение, а не vy: с высоты 60 px падение занимает ~0,15 с,
     // и к замеру игрок уже стоит на земле с обнулённой скоростью
     else if (afterRelease && !(afterRelease.y < flat.y)) problems.push(`после отпускания игрок не пошёл вниз: y ${flat.y} -> ${afterRelease.y}`);
+  }
+
+  // волна: след должен быть ломаной из палок, а не цепочкой точек.
+  // Вершина добавляется только на смене наклона, поэтому их должно быть мало.
+  let wave = null;
+  if (MODE === 'wave') {
+    await win.webContents.executeJavaScript(`(() => {
+      window.GW_APP.playLevel({ name: 'wave', bg: '#101a2e',
+        objects: [{ t: 'portal', x: 6, y: 2, mode: 'wave' },
+                  { t: 'portal', x: 16, y: 2, mode: 'wave' },
+                  { t: 'portal', x: 20, y: 2, mode: 'ship' },
+                  { t: 'portal', x: 24, y: 2, mode: 'cube' }] });
+      return 'ok';
+    })()`);
+    await new Promise((r) => setTimeout(r, 900));
+
+    const key = (type) => `window.dispatchEvent(new KeyboardEvent('${type}', { code: 'Space', key: ' ', bubbles: true }));`;
+    // машем кнопкой, чтобы волна пилила вверх-вниз и наделала изломов
+    for (let i = 0; i < 14; i++) {
+      await win.webContents.executeJavaScript(`(() => { ${key(i % 2 ? 'keyup' : 'keydown')} return 'ok'; })()`);
+      await new Promise((r) => setTimeout(r, 130));
+    }
+    wave = await win.webContents.executeJavaScript(`(() => {
+      const g = window.GW_APP.game;
+      const t = g.waveTrail || [];
+      let сумма = 0;
+      for (let i = 1; i < t.length; i++) сумма += Math.hypot(t[i].x - t[i-1].x, t[i].y - t[i-1].y);
+      return {
+        режим: g.p.mode, мертв: !!g.p.dead, вершин: t.length,
+        средняя_длина_палки: t.length > 1 ? Math.round(сумма / (t.length - 1)) : 0
+      };
+    })()`);
+    fs.mkdirSync(SHOT_DIR, { recursive: true });
+    fs.writeFileSync(path.join(SHOT_DIR, 'wave.png'), (await win.capturePage()).toPNG());
+    await win.webContents.executeJavaScript(`(() => { ${key('keyup')} return 'ok'; })()`);
+
+    if (wave.режим !== 'wave') problems.push('портал волны не сработал: режим ' + wave.режим);
+    else if (wave.вершин < 2) problems.push('след волны не появился');
+    // палка короче своей толщины (~11 px) снова выглядела бы точками
+    else if (wave.средняя_длина_палки < 20) problems.push(`палки слишком короткие: ${wave.средняя_длина_палки} px — след опять выйдет точками`);
   }
 
   // батут: обычный на полу обязан подбрасывать (я менял условие попадания),
@@ -297,6 +344,11 @@ app.whenReady().then(async () => {
   if (run) {
     console.log('=== PLAY ===');
     console.log(JSON.stringify(run, null, 2));
+  }
+
+  if (wave) {
+    console.log('=== WAVE ===');
+    console.log(JSON.stringify(wave, null, 2));
   }
 
   if (pads) {
