@@ -79,19 +79,41 @@
     color: var(--dim);
   }
 
+  /* две равноправные кнопки — обе платформы видны сразу */
+  .downloads {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+  }
+
   .download {
     display: inline-flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 19px 42px;
+    gap: 4px;
+    min-width: 220px;
+    padding: 18px 30px;
     border-radius: 16px;
     background: var(--green);
     border-bottom: 5px solid var(--green-dark);
     color: #fff;
-    font-size: 21px;
-    font-weight: 800;
     text-decoration: none;
     transition: transform .12s ease, filter .12s ease;
+  }
+
+  .download .row {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .download .sub {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, .8);
   }
 
   .download:hover { filter: brightness(1.08); }
@@ -99,32 +121,24 @@
 
   .download svg { flex: none; }
 
+  /* подсветка кнопки под систему гостя */
+  .download.you {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, .35), 0 10px 26px rgba(0, 0, 0, .4);
+  }
+  .youtag {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--dim);
+    min-height: 18px;
+  }
+
   .meta {
-    margin-top: 20px;
+    margin-top: 22px;
     font-size: 14px;
     color: var(--dim);
   }
 
   .meta b { color: rgba(255, 255, 255, .85); font-weight: 600; }
-
-  .req {
-    margin-top: 6px;
-    font-size: 13.5px;
-    color: rgba(255, 255, 255, .48);
-  }
-
-  /* ссылка на вторую платформу */
-  .other {
-    margin-top: 26px;
-    font-size: 15px;
-  }
-  .other a {
-    color: var(--dim);
-    text-decoration: none;
-    border-bottom: 1px solid rgba(255, 255, 255, .2);
-    padding-bottom: 1px;
-  }
-  .other a:hover { color: var(--ink); }
 
   footer {
     margin-top: 48px;
@@ -148,20 +162,32 @@
   <h1>Geometry Jump</h1>
   <p class="tagline">Игра с редактором уровней для macOS и Windows</p>
 
-  <a class="download" id="primary" href="https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-arm64.dmg">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 18.5V20a1 1 0 001 1h14a1 1 0 001-1v-1.5"
-            stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    <span id="primary-label">Скачать для macOS</span>
-  </a>
+  <div class="downloads">
+    <a class="download" id="btn-mac" href="https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-arm64.dmg">
+      <span class="row">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 18.5V20a1 1 0 001 1h14a1 1 0 001-1v-1.5"
+                stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        macOS
+      </span>
+      <span class="sub">.dmg · Apple M1 и новее</span>
+    </a>
 
-  <p class="meta" id="meta">Версия <b>1.2.0</b> · бесплатно</p>
-  <p class="req" id="req">Mac с чипом Apple — M1 и новее</p>
+    <a class="download" id="btn-win" href="https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-win-x64.zip">
+      <span class="row">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 18.5V20a1 1 0 001 1h14a1 1 0 001-1v-1.5"
+                stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Windows
+      </span>
+      <span class="sub">.zip · Windows 10/11, 64-бит</span>
+    </a>
+  </div>
 
-  <p class="other" id="other">
-    <a href="https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-win-x64.zip">Скачать для Windows</a>
-  </p>
+  <p class="youtag" id="youtag"></p>
+  <p class="meta">Версия <b>1.2.0</b> · бесплатно</p>
 
   <footer>
     <a href="https://github.com/easygamestudios/geometry-jump">Исходный код на GitHub</a>
@@ -169,28 +195,16 @@
 </main>
 
 <script>
-  // Ссылки на файлы. Крупная кнопка — под систему гостя, вторая уходит в «other».
-  var MAC = {
-    href: 'https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-arm64.dmg',
-    label: 'Скачать для macOS',
-    req: 'Mac с чипом Apple — M1 и новее',
-    other: 'Скачать для Windows'
-  };
-  var WIN = {
-    href: 'https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-win-x64.zip',
-    label: 'Скачать для Windows',
-    req: 'Windows 10/11, 64-бит · распакуй архив и запусти Geometry Jump.exe',
-    other: 'Скачать для macOS'
-  };
-
-  // страница по умолчанию сверстана под macOS; для Windows меняем местами
-  if (/Windows|Win64|Win32/i.test(navigator.userAgent || '')) {
-    document.getElementById('primary').href = WIN.href;
-    document.getElementById('primary-label').textContent = WIN.label;
-    document.getElementById('req').textContent = WIN.req;
-    var link = document.querySelector('#other a');
-    link.href = MAC.href;
-    link.textContent = MAC.label;
+  // Обе кнопки видны всегда. Систему гостя только подсвечиваем — не прячем вторую.
+  var win = /Windows|Win64|Win32/i.test(navigator.userAgent || '');
+  var mac = /Mac|iPhone|iPad/i.test(navigator.userAgent || '');
+  var youtag = document.getElementById('youtag');
+  if (win) {
+    document.getElementById('btn-win').classList.add('you');
+    youtag.textContent = 'Похоже, у тебя Windows — распакуй архив и запусти Geometry Jump.exe';
+  } else if (mac) {
+    document.getElementById('btn-mac').classList.add('you');
+    youtag.textContent = 'Похоже, у тебя Mac';
   }
 </script>
 </body>
