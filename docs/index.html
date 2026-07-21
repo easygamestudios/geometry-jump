@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Geometry Jump — скачать для macOS</title>
-<meta name="description" content="Geometry Jump — игра с редактором уровней для macOS. Скачать бесплатно.">
+<title>Geometry Jump — скачать для macOS и Windows</title>
+<meta name="description" content="Geometry Jump — игра с редактором уровней для macOS и Windows. Скачать бесплатно.">
 <meta property="og:title" content="Geometry Jump">
-<meta property="og:description" content="Игра с редактором уровней для macOS">
+<meta property="og:description" content="Игра с редактором уровней для macOS и Windows">
 <meta property="og:type" content="website">
 <link rel="icon" href="icon.png">
 <style>
@@ -113,8 +113,21 @@
     color: rgba(255, 255, 255, .48);
   }
 
+  /* ссылка на вторую платформу */
+  .other {
+    margin-top: 26px;
+    font-size: 15px;
+  }
+  .other a {
+    color: var(--dim);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, .2);
+    padding-bottom: 1px;
+  }
+  .other a:hover { color: var(--ink); }
+
   footer {
-    margin-top: 52px;
+    margin-top: 48px;
     padding-top: 22px;
     border-top: 1px solid var(--line);
     font-size: 14px;
@@ -133,22 +146,52 @@
   <img class="icon" src="icon.png" alt="Иконка Geometry Jump" width="132" height="132">
 
   <h1>Geometry Jump</h1>
-  <p class="tagline">Игра с редактором уровней для macOS</p>
+  <p class="tagline">Игра с редактором уровней для macOS и Windows</p>
 
-  <a class="download" href="https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-arm64.dmg">
+  <a class="download" id="primary" href="https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-arm64.dmg">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 18.5V20a1 1 0 001 1h14a1 1 0 001-1v-1.5"
             stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    Скачать для macOS
+    <span id="primary-label">Скачать для macOS</span>
   </a>
 
-  <p class="meta">Версия <b>1.2.0</b> · 128 МБ · бесплатно</p>
-  <p class="req">Mac с чипом Apple — M1 и новее</p>
+  <p class="meta" id="meta">Версия <b>1.2.0</b> · бесплатно</p>
+  <p class="req" id="req">Mac с чипом Apple — M1 и новее</p>
+
+  <p class="other" id="other">
+    <a href="https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-win-x64.zip">Скачать для Windows</a>
+  </p>
 
   <footer>
     <a href="https://github.com/easygamestudios/geometry-jump">Исходный код на GitHub</a>
   </footer>
 </main>
+
+<script>
+  // Ссылки на файлы. Крупная кнопка — под систему гостя, вторая уходит в «other».
+  var MAC = {
+    href: 'https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-arm64.dmg',
+    label: 'Скачать для macOS',
+    req: 'Mac с чипом Apple — M1 и новее',
+    other: 'Скачать для Windows'
+  };
+  var WIN = {
+    href: 'https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-win-x64.zip',
+    label: 'Скачать для Windows',
+    req: 'Windows 10/11, 64-бит · распакуй архив и запусти Geometry Jump.exe',
+    other: 'Скачать для macOS'
+  };
+
+  // страница по умолчанию сверстана под macOS; для Windows меняем местами
+  if (/Windows|Win64|Win32/i.test(navigator.userAgent || '')) {
+    document.getElementById('primary').href = WIN.href;
+    document.getElementById('primary-label').textContent = WIN.label;
+    document.getElementById('req').textContent = WIN.req;
+    var link = document.querySelector('#other a');
+    link.href = MAC.href;
+    link.textContent = MAC.label;
+  }
+</script>
 </body>
 </html>

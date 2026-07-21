@@ -1,11 +1,12 @@
 {
   "name": "geometry-jump",
   "version": "1.2.0",
-  "description": "Geometry Jump — игра с редактором уровней, приложение для macOS",
+  "description": "Geometry Jump — игра с редактором уровней для macOS и Windows",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --mac"
+    "build": "electron-builder --mac",
+    "build:win": "electron-builder --win"
   },
   "author": "Gleb",
   "license": "UNLICENSED",
@@ -37,6 +38,17 @@
         }
       ],
       "icon": "build/icon.icns"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
     }
   },
   "devDependencies": {

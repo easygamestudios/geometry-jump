@@ -1,7 +1,7 @@
 # Geometry Jump
 
-Приложение для macOS: игра + редактор уровней. Внутри — та же игра на HTML5/Canvas,
-что и раньше, но завёрнутая в Electron, поэтому запускается как обычная программа,
+Приложение для macOS и Windows: игра + редактор уровней. Внутри — та же игра на
+HTML5/Canvas, но завёрнутая в Electron, поэтому запускается как обычная программа,
 а не как сайт в браузере.
 
 **Скачать:** https://easygamestudios.github.io/geometry-jump/
@@ -31,13 +31,20 @@ npm start
 ## Собрать приложение
 
 ```
-npm run build
+npm run build       # macOS: .dmg (arm64)
+npm run build:win   # Windows: .zip (x64), портативная сборка
 ```
 
 Готовое лежит в `dist/`:
 
-- `Geometry Jump-1.2.0-arm64.dmg` — образ для установки
+- `Geometry Jump-1.2.0-arm64.dmg` — образ для установки на Mac
 - `mac-arm64/Geometry Jump.app` — само приложение, можно сразу перетащить в «Программы»
+- `Geometry Jump-1.2.0-win.zip` — портативная сборка для Windows (распаковать и запустить `Geometry Jump.exe`)
+
+Windows собирается как `zip`, а не `.exe`-инсталлятор: NSIS-инсталлятор требует
+wine для сборки на macOS, а `zip` пакует готовый виндовый бинарник Electron без
+лишних зависимостей. Для настоящего инсталлятора нужен `wine` (`brew install --cask
+wine-stable`) и таргет `nsis` в `package.json`.
 
 ## Проверить, что всё живо
 
