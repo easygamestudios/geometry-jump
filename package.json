@@ -42,13 +42,21 @@
     "win": {
       "target": [
         {
-          "target": "zip",
+          "target": "nsis",
           "arch": [
             "x64"
           ]
         }
       ],
       "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Geometry Jump",
+      "artifactName": "Geometry-Jump-Setup-${version}.${ext}"
     }
   },
   "devDependencies": {

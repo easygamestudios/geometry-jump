@@ -32,19 +32,17 @@ npm start
 
 ```
 npm run build       # macOS: .dmg (arm64)
-npm run build:win   # Windows: .zip (x64), портативная сборка
+npm run build:win   # Windows: .exe-установщик (x64)
 ```
 
 Готовое лежит в `dist/`:
 
 - `Geometry Jump-1.2.0-arm64.dmg` — образ для установки на Mac
 - `mac-arm64/Geometry Jump.app` — само приложение, можно сразу перетащить в «Программы»
-- `Geometry Jump-1.2.0-win.zip` — портативная сборка для Windows (распаковать и запустить `Geometry Jump.exe`)
+- `Geometry-Jump-Setup-1.2.0.exe` — установщик для Windows (один файл: запустил — поставилось, ярлык на рабочем столе)
 
-Windows собирается как `zip`, а не `.exe`-инсталлятор: NSIS-инсталлятор требует
-wine для сборки на macOS, а `zip` пакует готовый виндовый бинарник Electron без
-лишних зависимостей. Для настоящего инсталлятора нужен `wine` (`brew install --cask
-wine-stable`) и таргет `nsis` в `package.json`.
+NSIS-установщик собирается на macOS нативно, wine не нужен. Игроку достаётся
+один `.exe` вместо папки с полусотней файлов Electron.
 
 ## Проверить, что всё живо
 

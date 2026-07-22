@@ -174,7 +174,7 @@
       <span class="sub">.dmg · Apple M1 и новее</span>
     </a>
 
-    <a class="download" id="btn-win" href="https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-win-x64.zip">
+    <a class="download" id="btn-win" href="https://github.com/easygamestudios/geometry-jump/releases/latest/download/Geometry-Jump-Setup.exe">
       <span class="row">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 18.5V20a1 1 0 001 1h14a1 1 0 001-1v-1.5"
@@ -182,7 +182,7 @@
         </svg>
         Windows
       </span>
-      <span class="sub">.zip · Windows 10/11, 64-бит</span>
+      <span class="sub">установщик · Windows 10/11, 64-бит</span>
     </a>
   </div>
 
@@ -201,7 +201,7 @@
   var youtag = document.getElementById('youtag');
   if (win) {
     document.getElementById('btn-win').classList.add('you');
-    youtag.textContent = 'Похоже, у тебя Windows — распакуй архив и запусти Geometry Jump.exe';
+    youtag.textContent = 'Похоже, у тебя Windows — скачай установщик и запусти его';
   } else if (mac) {
     document.getElementById('btn-mac').classList.add('you');
     youtag.textContent = 'Похоже, у тебя Mac';
